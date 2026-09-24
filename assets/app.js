@@ -86,7 +86,9 @@ function renderDestinations() {
 
 function destLabel(dest) {
   let label;
-  if (dest.github) {
+  if (dest.subtitle) {
+    label = dest.subtitle;
+  } else if (dest.github) {
     label = `GitHub Actions → ${dest.github.workflow}`;
   } else {
     try {
@@ -205,7 +207,7 @@ const formatJST = (date) =>
 
 /**
  * 送信して結果を返す。失敗時は SendError を投げる。
- * @param {(text: string) => void} progress 送信中の表示を更新する
+ * @param {(text: string, link?: { href: string, text: string }) => void} progress 送信中の表示を更新する
  * @returns {Promise<{ state: "ok" | "unknown", detail: string, link?: { href: string, text: string } }>}
  */
 async function post(dest, form, progress) {
@@ -267,7 +269,9 @@ async function github(path, init = {}) {
   }
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    const hint = res.status === 401 ? "（トークンの期限切れかもしれません）" : "";
+    const hint = res.status === 401 ? "（トークンの期限切れかもしれません）"
+      : res.status === 403 ? "（トークンの Actions 権限が Read and write になっているか確認してください）"
+      : "";
     throw new SendError(`GitHub API ${res.status}: ${body?.message ?? "エラー"}${hint}`);
   }
   return res.status === 204 ? null : res.json();
@@ -282,7 +286,7 @@ async function dispatchWorkflow({ repo, workflow, ref }, data, progress) {
   const since = new Date(Date.now() - 60_000).toISOString();
   const base = `/repos/${repo}/actions/workflows/${encodeURIComponent(workflow)}`;
 
-  progress("起動中…");
+  progress("Actions 発行中…");
   await github(`${base}/dispatches`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -291,6 +295,9 @@ async function dispatchWorkflow({ repo, workflow, ref }, data, progress) {
       inputs: { text: data.get("text"), due_at: data.get("dueAt"), request_id: requestId },
     }),
   });
+  // 起動できた時点から、Actions の画面で進行状況を見られるようにする
+  const actions = { href: `https://github.com/${repo}/actions`, text: "Actions で進行状況を見る ↗" };
+  progress("Actions 実行待ち…", actions);
 
   const deadline = Date.now() + RUN_TIMEOUT_MS;
   let run = null;
@@ -303,17 +310,17 @@ async function dispatchWorkflow({ repo, workflow, ref }, data, progress) {
     } else {
       run = await github(`/repos/${repo}/actions/runs/${run.id}`);
     }
-    progress(run.status === "in_progress" ? "登録中…" : "待機中…");
+    progress(run.status === "in_progress" ? "Buffer に送信中…" : "Actions 実行待ち…", actions);
     if (run.status !== "completed") continue;
 
-    const log = { href: run.html_url, text: "実行ログ ↗" };
+    const log = { href: run.html_url, text: "GitHub Actionsログ ↗" };
     if (run.conclusion === "success") {
-      return { state: "ok", detail: `${formatJST(data.get("dueAt"))} の予約投稿として Buffer に登録しました。` };
+      return { state: "ok", detail: `${formatJST(data.get("dueAt"))} の予約投稿として Buffer に登録しました。`, link: log };
     }
     throw new SendError(await failureReason(repo, run), log);
   }
   if (run) {
-    return { state: "unknown", detail: "時間内に完了しませんでした。実行ログで結果を確認してください。", link: { href: run.html_url, text: "実行ログ ↗" } };
+    return { state: "unknown", detail: "時間内に完了しませんでした。GitHub Actionsログで結果を確認してください。", link: { href: run.html_url, text: "GitHub Actionsログ ↗" } };
   }
   return { state: "unknown", detail: "起動は受け付けられましたが、実行が見つかりませんでした。Actions の画面で確認してください。",
     link: { href: `https://github.com/${repo}/actions/workflows/${workflow}`, text: "Actions ↗" } };
@@ -338,28 +345,41 @@ async function failureReason(repo, run) {
 
 const CHIP_TEXT = { ok: "送信成功", unknown: "送信済み・結果不明", err: "送信失敗" };
 
+/**
+ * 結果欄を更新する。
+ * 送信中は見出し（busyLabel）を大きく、進み具合（detail）をその下に小さく出す。
+ * 成功時に doneLabel があれば、それを大きく出してから詳細を添える。
+ */
 function showResult(card, state, detail, link) {
+  const dest = DESTINATIONS[card.dataset.dest];
+  const busyLabel = dest.busyLabel ?? "送信中…";
   const chip = $("[data-chip]", card);
   const time = new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
   chip.dataset.state = state;
-  chip.textContent = state === "busy" ? detail ?? "送信中…" : `${CHIP_TEXT[state]} ${time}`;
+  chip.textContent = state === "busy" ? busyLabel : `${CHIP_TEXT[state]} ${time}`;
 
   const result = $("[data-result]", card);
   result.dataset.state = state;
   result.replaceChildren();
-  if (state === "busy") return;
-  result.append(detail);
-  const checkUrl = DESTINATIONS[card.dataset.dest].checkUrl;
-  const links = [
-    link,
-    checkUrl && { href: checkUrl, text: state === "ok" ? "掲載を確認 ↗" : "掲載ページで確認 ↗" },
-  ].filter(Boolean);
-  for (const l of links) result.append(" ", el("a", { href: l.href, target: "_blank", rel: "noopener", textContent: l.text }));
+  const anchor = (l) => el("a", { href: l.href, target: "_blank", rel: "noopener", textContent: l.text });
+
+  if (state === "busy") {
+    result.append(el("span", { className: "dest__headline", textContent: busyLabel }));
+    if (detail || link) result.append(el("span", { className: "dest__step" }, detail ?? "", link ? " " : null, link ? anchor(link) : null));
+    return;
+  }
+  if (state === "ok" && dest.doneLabel) result.append(el("span", { className: "dest__headline", textContent: dest.doneLabel }));
+  const checkText = dest.checkLabel ?? (state === "ok" ? "掲載を確認" : "掲載ページで確認");
+  const links = [link, dest.checkUrl && { href: dest.checkUrl, text: `${checkText} ↗` }].filter(Boolean);
+  const line = el("span", { className: "dest__step" }, detail);
+  for (const l of links) line.append(" ", anchor(l));
+  result.append(line);
 }
 
 /* ---------- X の投稿文 ---------- */
 
 const TWEET_LIMIT = 280;
+const MIN_LEAD_MS = 5 * 60 * 1000;
 
 // X の文字数の数え方（twitter-text v3）の簡易版: URL は23文字、CJK などは2文字として数える
 function tweetLength(text) {
@@ -388,8 +408,9 @@ function validate(card) {
   const form = $("form", card);
   const due = form.elements.dueAt;
   if (due) {
-    const past = due.value && new Date(`${due.value}:00+09:00`) <= new Date();
-    due.setCustomValidity(past ? "投稿日時は現在より後にしてください。" : "");
+    // Actions の起動に1分ほどかかるため、余裕を見て5分後以降に限る
+    const tooSoon = due.value && new Date(`${due.value}:00+09:00`) < new Date(Date.now() + MIN_LEAD_MS);
+    due.setCustomValidity(tooSoon ? "投稿日時は今から5分後以降にしてください。" : "");
   }
   form.classList.add("was-checked");
   return form.checkValidity();
@@ -400,7 +421,7 @@ async function sendCard(card) {
   btn.disabled = true;
   showResult(card, "busy");
   try {
-    const progress = (text) => showResult(card, "busy", text);
+    const progress = (text, link) => showResult(card, "busy", text, link);
     const { state, detail, link } = await post(DESTINATIONS[card.dataset.dest], $("form", card), progress);
     showResult(card, state, detail, link);
     return state;

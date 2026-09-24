@@ -36,7 +36,9 @@ async function gql(query) {
 }
 
 async function findXChannelId() {
-  if (process.env.BUFFER_CHANNEL_ID) return process.env.BUFFER_CHANNEL_ID;
+  // シークレット登録時に紛れ込みやすい前後の空白・改行は取り除く
+  const configured = process.env.BUFFER_CHANNEL_ID?.trim();
+  if (configured) return configured;
 
   // 1. 組織IDを取得
   const { account } = await gql(`query { account { organizations { id name } } }`);
