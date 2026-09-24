@@ -63,151 +63,56 @@
       </form>
     </section>
 
-    <!-- 送信先 B -->
-    <section class="dest" data-dest="b" aria-labelledby="b-title">
+    <!-- ワールド内イベントカレンダー（Google フォーム） -->
+    <section class="dest" data-dest="calendar" aria-labelledby="calendar-title">
       <header class="dest__head">
-        <span class="dest__letter" aria-hidden="true">B</span>
+        <span class="dest__letter" aria-hidden="true">暦</span>
         <div class="dest__meta">
-          <h2 class="dest__name" id="b-title">送信先 B</h2>
-          <p class="dest__host"><span data-host></span><a class="dest__check" data-check target="_blank" rel="noopener">掲載ページ ↗</a></p>
+          <h2 class="dest__name" id="calendar-title">ワールド内イベントカレンダー</h2>
+          <p class="dest__host"><span data-host></span><a class="dest__check" data-check target="_blank" rel="noopener">フォーム ↗</a></p>
         </div>
         <p class="chip" data-state="idle" data-chip>未送信</p>
       </header>
       <form class="dest__form" novalidate>
         <fieldset disabled>
-          <legend class="sr-only">送信先 B の入力内容</legend>
+          <legend class="sr-only">ワールド内イベントカレンダーの入力内容</legend>
           <div class="field field--full">
-            <label for="b-title-input">イベント名</label>
-            <input id="b-title-input" name="title" type="text" maxlength="60" required>
-          </div>
-          <div class="field">
-            <label for="b-date">開催日</label>
-            <input id="b-date" name="date" type="date" required>
-          </div>
-          <div class="field field--pair">
-            <div>
-              <label for="b-start">開始</label>
-              <input id="b-start" name="start" type="time" required>
-            </div>
-            <div>
-              <label for="b-end">終了</label>
-              <input id="b-end" name="end" type="time">
-            </div>
-          </div>
-          <div class="field">
-            <label for="b-organizer">主催者</label>
-            <input id="b-organizer" name="organizer" type="text" maxlength="40" required>
-          </div>
-          <div class="field">
-            <label for="b-genre">ジャンル</label>
-            <select id="b-genre" name="genre" required>
-              <option value="">選択してください</option>
-              <option>交流・雑談</option>
-              <option>音楽・DJ</option>
-              <option>学習・技術</option>
-              <option>ロールプレイ</option>
-              <option>その他</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="b-access">参加方法</label>
-            <select id="b-access" name="access" required>
-              <option value="">選択してください</option>
-              <option>パブリック</option>
-              <option>グループ</option>
-              <option>フレンド+</option>
-              <option>招待制</option>
-            </select>
+            <label for="calendar-title-input">イベントタイトル</label>
+            <input id="calendar-title-input" name="title" type="text" required>
           </div>
           <div class="field field--full">
-            <label for="b-description">説明 <span class="field__hint">500字まで</span></label>
-            <textarea id="b-description" name="description" rows="4" maxlength="500"></textarea>
+            <label for="calendar-description">イベント概要</label>
+            <textarea id="calendar-description" name="description" rows="4" required></textarea>
+          </div>
+          <div class="field">
+            <label for="calendar-date">開催日</label>
+            <input id="calendar-date" name="date" type="date" required>
+          </div>
+          <div class="field">
+            <label for="calendar-start">開始時刻</label>
+            <input id="calendar-start" name="start" type="time">
           </div>
           <div class="dest__actions">
             <p class="dest__result" data-result role="status"></p>
-            <button class="btn btn--accent" type="submit">送信先 B に送信</button>
+            <button class="btn btn--accent" type="submit">カレンダーに登録</button>
           </div>
         </fieldset>
       </form>
     </section>
 
-    <!-- 送信先 C -->
-    <section class="dest" data-dest="c" aria-labelledby="c-title">
+    <!-- VRChatイベントカレンダー（vrceve.com。登録用の Google フォームを埋め込み。送信はフォーム内のボタンで行う） -->
+    <section class="dest dest--embed" aria-labelledby="vrccal-title">
       <header class="dest__head">
-        <span class="dest__letter" aria-hidden="true">C</span>
+        <span class="dest__letter" aria-hidden="true">V</span>
         <div class="dest__meta">
-          <h2 class="dest__name" id="c-title">送信先 C</h2>
-          <p class="dest__host"><span data-host></span><a class="dest__check" data-check target="_blank" rel="noopener">掲載ページ ↗</a></p>
+          <h2 class="dest__name" id="vrccal-title">VRChatイベントカレンダー</h2>
+          <p class="dest__host"><span>送信はフォーム内の「送信」ボタンで行う</span><a class="dest__check" href="https://vrceve.com" target="_blank" rel="noopener">vrceve.com ↗</a></p>
         </div>
-        <p class="chip" data-state="idle" data-chip>未送信</p>
       </header>
-      <form class="dest__form" novalidate>
-        <fieldset disabled>
-          <legend class="sr-only">送信先 C の入力内容</legend>
-          <div class="field field--full">
-            <label for="c-title-input">イベント名</label>
-            <input id="c-title-input" name="title" type="text" maxlength="60" required>
-          </div>
-          <div class="field">
-            <label for="c-date">開催日</label>
-            <input id="c-date" name="date" type="date" required>
-          </div>
-          <div class="field field--pair">
-            <div>
-              <label for="c-start">開始</label>
-              <input id="c-start" name="start" type="time" required>
-            </div>
-            <div>
-              <label for="c-end">終了</label>
-              <input id="c-end" name="end" type="time">
-            </div>
-          </div>
-          <div class="field">
-            <label for="c-organizer">主催者</label>
-            <input id="c-organizer" name="organizer" type="text" maxlength="40" required>
-          </div>
-          <div class="field">
-            <label for="c-genre">ジャンル</label>
-            <select id="c-genre" name="genre" required>
-              <option value="">選択してください</option>
-              <option>交流・雑談</option>
-              <option>音楽・DJ</option>
-              <option>学習・技術</option>
-              <option>ロールプレイ</option>
-              <option>その他</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="c-access">参加方法</label>
-            <select id="c-access" name="access" required>
-              <option value="">選択してください</option>
-              <option>パブリック</option>
-              <option>グループ</option>
-              <option>フレンド+</option>
-              <option>招待制</option>
-            </select>
-          </div>
-          <div class="field field--full">
-            <label for="c-description">説明 <span class="field__hint">500字まで</span></label>
-            <textarea id="c-description" name="description" rows="4" maxlength="500"></textarea>
-          </div>
-          <div class="dest__actions">
-            <p class="dest__result" data-result role="status"></p>
-            <button class="btn btn--accent" type="submit">送信先 C に送信</button>
-          </div>
-        </fieldset>
-      </form>
+      <iframe class="dest__embed" src="https://docs.google.com/forms/d/e/1FAIpQLSeGBfcWfPPD-BWnHFMH3BweU7oSngiitP50gNFis5bdgy3HBQ/viewform?embedded=true" title="VRChatイベントカレンダー（vrceve.com）登録フォーム">読み込んでいます…</iframe>
     </section>
   </main>
 
-  <footer class="bulk">
-    <div class="bulk__text">
-      <p class="bulk__title">一括送信</p>
-      <p class="bulk__note">X・B・C の3か所へ、それぞれのフォームの内容を順に送信します。</p>
-      <p class="bulk__status" id="bulk-status" role="status"></p>
-    </div>
-    <button class="btn btn--accent btn--lg" type="button" id="bulk-send" disabled>3か所に一括送信</button>
-  </footer>
 
   <dialog class="confirm" id="confirm" aria-labelledby="confirm-title">
     <form method="dialog" class="confirm__inner">

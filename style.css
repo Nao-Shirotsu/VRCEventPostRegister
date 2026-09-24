@@ -153,7 +153,7 @@ textarea { resize: vertical; min-height: 96px; }
 /* ---------- destination cards ---------- */
 .dests {
   max-width: var(--w);
-  margin: 0 auto;
+  margin: 0 auto 72px;
   display: grid;
   gap: 28px;
 }
@@ -265,6 +265,16 @@ textarea { resize: vertical; min-height: 96px; }
 }
 @keyframes pulse { 50% { opacity: .45; } }
 
+/* embedded external form */
+.dest__embed {
+  display: block;
+  width: 100%;
+  height: 75vh;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: #fff;
+}
+
 /* signature: the shutter. Locked cards sit behind a hatched panel that lifts on unlock. */
 .dest::after {
   content: "";
@@ -283,25 +293,6 @@ textarea { resize: vertical; min-height: 96px; }
 [data-locked="true"] .dest__letter { color: var(--mute); }
 .dest:nth-child(2)::after { transition-delay: .07s; }
 .dest:nth-child(3)::after { transition-delay: .14s; }
-
-/* ---------- bulk ---------- */
-.bulk {
-  max-width: var(--w);
-  margin: 44px auto 72px;
-  padding-top: 22px;
-  border-top: 2px solid var(--ink);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-}
-.bulk__title { margin: 0; font: 400 20px/1.3 var(--f-display); }
-.bulk__note { margin: 2px 0 0; font-size: 13px; color: var(--mute); }
-.bulk__status { margin: 6px 0 0; font: 400 12px/1.5 var(--f-mono); }
-.bulk__status:empty { display: none; }
-.bulk__status[data-tone="ok"] { color: var(--ok); }
-.bulk__status[data-tone="err"] { color: var(--err); }
-.bulk__status[data-tone="unknown"] { color: var(--warn); }
 
 /* ---------- dialog ---------- */
 .confirm {
@@ -342,7 +333,6 @@ textarea { resize: vertical; min-height: 96px; }
   .dest__actions { flex-direction: column-reverse; align-items: stretch; }
   .dest__actions .btn { width: 100%; }
   .dest__result:empty { display: none; }
-  .bulk { flex-direction: column; align-items: stretch; }
   .gate__row { flex-wrap: wrap; }
   .gate__input { flex-basis: 100%; }
   .gate__row .btn { flex: 1; }

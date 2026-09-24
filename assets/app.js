@@ -13,19 +13,17 @@ const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const DESTINATIONS = window.APP_CONFIG.destinations;
 
 const FIELD_LABELS = {
-  title: "イベント名",
+  title: "イベントタイトル",
   date: "開催日",
   start: "開始",
   end: "終了",
   organizer: "主催者",
   genre: "ジャンル",
   access: "参加方法",
-  description: "説明",
+  description: "概要・説明",
   text: "投稿文",
   dueAt: "投稿日時",
 };
-// 一括送信の確認ダイアログに出す項目（フォームにあるものだけ表示する）
-const SUMMARY_FIELDS = ["title", "date", "start", "text", "dueAt"];
 
 // 解錠中だけメモリに持つ GitHub トークン。ロックすると消す
 let token = null;
@@ -65,9 +63,9 @@ function setLocked(locked) {
   document.body.dataset.locked = String(locked);
   $$(".dest").forEach((card) => {
     card.inert = locked;
-    $("fieldset", card).disabled = locked;
+    const fieldset = $("fieldset", card); // 埋め込みフォームのカードにはない
+    if (fieldset) fieldset.disabled = locked;
   });
-  $("#bulk-send").disabled = locked;
   $("#gate-lock").hidden = locked;
   $("#gate-submit").hidden = !locked;
   $("#token").disabled = !locked;
@@ -75,7 +73,7 @@ function setLocked(locked) {
 }
 
 function renderDestinations() {
-  $$(".dest").forEach((card) => {
+  $$(".dest[data-dest]").forEach((card) => {
     const dest = DESTINATIONS[card.dataset.dest];
     $(".dest__name", card).textContent = dest.name;
     $("[data-host]", card).textContent = destLabel(dest);
@@ -164,10 +162,10 @@ function el(tag, props = {}, ...children) {
   return node;
 }
 
-function fieldList(form, keys) {
+function fieldList(form) {
   const data = new FormData(form);
   const dl = el("dl");
-  for (const key of keys?.filter((k) => data.has(k)) ?? data.keys()) {
+  for (const key of data.keys()) {
     let value = String(data.get(key) ?? "").trim();
     if (key === "dueAt" && value) value = value.replace("T", " ");
     dl.append(el("dt", { textContent: FIELD_LABELS[key] ?? key }), el("dd", { textContent: value || "—" }));
@@ -175,7 +173,7 @@ function fieldList(form, keys) {
   return dl;
 }
 
-function destBlock(card, keys) {
+function destBlock(card) {
   const dest = DESTINATIONS[card.dataset.dest];
   const state = $("[data-chip]", card).dataset.state;
   return el("div", { className: "confirm__dest" },
@@ -183,7 +181,7 @@ function destBlock(card, keys) {
       dest.name,
       el("span", { className: "mono", textContent: destLabel(dest) }),
     ),
-    fieldList($("form", card), keys),
+    fieldList($("form", card)),
     state === "ok" || state === "unknown"
       ? el("p", { className: "confirm__warn", textContent: "この送信先には送信済みです。もう一度送信されます。" })
       : null,
@@ -219,6 +217,7 @@ async function post(dest, form, progress) {
 
   if (dest.mock) return mockPost(dest, data);
   if (dest.github) return dispatchWorkflow(dest.github, data, progress);
+  if (dest.googleForm) return postGoogleForm(dest.googleForm, data);
 
   let res;
   try {
@@ -244,6 +243,38 @@ async function mockPost(dest, data) {
   if (dest.mock === "opaque") return { state: "unknown", detail: "送信しましたが、この送信先は結果を返しません。" };
   if (data.has("dueAt")) return { state: "ok", detail: `${formatJST(data.get("dueAt"))} の予約投稿として登録しました。` };
   return { state: "ok", detail: "HTTP 200 — 受け付けられました。" };
+}
+
+/* ---------- Google フォーム ---------- */
+
+// 日付は _year/_month/_day、時刻は _hour/_minute に分けて送るのが Google フォームの形式
+async function postGoogleForm({ id, entries, pages = 1 }, data) {
+  const body = new URLSearchParams();
+  // ページ（セクション）が分かれたフォームは、通ったページの一覧がないと2ページ目以降が捨てられる
+  if (pages > 1) body.set("pageHistory", Array.from({ length: pages }, (_, i) => i).join(","));
+  for (const [field, entry] of Object.entries(entries)) {
+    const value = String(data.get(field) ?? "");
+    if (!value) continue;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [y, m, d] = value.split("-");
+      body.set(`entry.${entry}_year`, y);
+      body.set(`entry.${entry}_month`, m);
+      body.set(`entry.${entry}_day`, d);
+    } else if (/^\d{2}:\d{2}$/.test(value)) {
+      const [h, min] = value.split(":");
+      body.set(`entry.${entry}_hour`, h);
+      body.set(`entry.${entry}_minute`, min);
+    } else {
+      body.set(`entry.${entry}`, value);
+    }
+  }
+  try {
+    // Google フォームは CORS に対応していないため、送れても結果は読めない
+    await fetch(`https://docs.google.com/forms/d/e/${id}/formResponse`, { method: "POST", mode: "no-cors", body });
+  } catch {
+    throw new SendError("通信エラー — 送信できませんでした。通信状況を確認してください。");
+  }
+  return { state: "unknown", detail: "Google フォームに送信しました。届いたかはフォームの回答一覧で確認してください。" };
 }
 
 /* ---------- GitHub Actions ---------- */
@@ -450,42 +481,6 @@ async function onCardSubmit(ev) {
   if (ok) await sendCard(card);
 }
 
-async function onBulkSend() {
-  if (!token) return;
-  const cards = $$(".dest");
-  const invalid = cards.find((card) => !validate(card));
-  if (invalid) {
-    invalid.scrollIntoView({ behavior: "smooth", block: "start" });
-    $("form", invalid).reportValidity();
-    return;
-  }
-
-  const ok = await confirmDialog({
-    title: `${cards.length}か所に一括送信しますか？`,
-    body: el("div", {}, ...cards.map((card) => destBlock(card, SUMMARY_FIELDS))),
-    okLabel: `${cards.length}か所に送信する`,
-  });
-  if (!ok) return;
-
-  const bulk = $("#bulk-send");
-  const status = $("#bulk-status");
-  bulk.disabled = true;
-  status.textContent = "";
-  // 送信先ごとの失敗が他に影響しないよう順番に送る
-  const states = [];
-  for (const card of cards) states.push(await sendCard(card));
-  bulk.disabled = false;
-
-  const count = (s) => states.filter((x) => x === s).length;
-  const parts = [`成功 ${count("ok")}`, `結果不明 ${count("unknown")}`, `失敗 ${count("err")}`];
-  status.dataset.tone = count("err") ? "err" : count("unknown") ? "unknown" : "ok";
-  status.textContent = count("err")
-    ? `${parts.join(" / ")} — 失敗した送信先を個別に送信し直してください。`
-    : count("unknown")
-      ? `${parts.join(" / ")} — 結果不明の送信先は掲載ページで確認してください。`
-      : `${cards.length}か所すべてに送信しました。`;
-}
-
 /* ---------- init ---------- */
 
 renderDestinations();
@@ -498,7 +493,6 @@ if (remembered) {
 $("#gate-form").addEventListener("submit", onUnlock);
 $("#gate-lock").addEventListener("click", onLock);
 $$(".dest form").forEach((f) => f.addEventListener("submit", onCardSubmit));
-$("#bulk-send").addEventListener("click", onBulkSend);
 $$("[data-tweet]").forEach((t) => {
   t.addEventListener("input", () => updateTweetCounter(t));
   updateTweetCounter(t);
