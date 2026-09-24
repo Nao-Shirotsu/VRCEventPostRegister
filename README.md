@@ -8,7 +8,6 @@ assets/config.js                    送信先の設定。手で編集する
 assets/app.js                       画面の動作（ゲート・確認ダイアログ・送信・結果表示）
 tools/buffer-post.mjs               Buffer に X の予約投稿を登録する（Actions から実行）
 .github/workflows/buffer-post.yml   サイトから起動されるワークフロー（X / Buffer）
-tools/vrc-login.mjs                 VRChat にログインして Cookie を表示する（手元で実行）
 tools/vrchat.mjs                    VRChat グループにイベント・投稿を登録する（Actions から実行）
 .github/workflows/vrchat.yml        サイトから起動されるワークフロー（VRChat）
 ```
@@ -52,21 +51,23 @@ GitHub API はブラウザから呼べるので、サイトからワークフロ
 
 VRChat API もブラウザから直接呼べないため、X と同じく Actions 経由で作成する。
 
-- ログインは手元で1回だけ行い、発行された Cookie をシークレット `VRC_COOKIE` に登録する。パスワードはどこにも保存しない。
-  VRChat は ID・パスワードでのログインごとにセッションを消費し、その数に上限があるため、毎回ログインはしない。
-- Cookie が切れると、サイトに「VRChat のログインが切れています」と表示される。そのときだけ再ログインする。
-- グループのカレンダー管理権限だけを持つサブアカウントを使う。
+- VRChat のログイン Cookie は発行元の IP に結びつき、実行ごとに IP が変わる Actions では使い回せない。
+  そのため実行ごとに「ログイン → 2段階認証 → 作成 → ログアウト」を行う。ログアウトするのでセッションは残らない。
+- ログイン情報はシークレットにだけ置く。グループのカレンダー・投稿の権限だけを持つサブアカウントを使う。
 
 ### 初期設定
 
-1. 対象グループは `assets/config.js` の `VRC_GROUP_ID` で指定する
-2. 手元でログインして Cookie を取得する
+1. サブアカウントの2段階認証を **認証アプリ方式** にする。設定時に「キーを手入力」で表示される秘密鍵を控える
+   （メール認証のままだと、Actions からのログインのたびにメールの確認コードを求められて止まる）
+2. Repository secrets に次の3つを登録する
 
-   ```sh
-   node tools/vrc-login.mjs
-   ```
+   | 名前 | 値 |
+   | --- | --- |
+   | `VRC_USERNAME` | サブアカウントのユーザー名 |
+   | `VRC_PASSWORD` | サブアカウントのパスワード |
+   | `VRC_TOTP_SECRET` | 手順1の秘密鍵（空白はあってもよい） |
 
-3. 表示された1行を Repository secrets の `VRC_COOKIE` に登録する
+3. 対象グループは `assets/config.js` の `VRC_GROUP_ID` で指定する
 
 ## 送信結果の表示
 

@@ -34,4 +34,6 @@ jobs:
       # 入力はログに出さないよう、env ではなくスクリプトがイベントファイルから読む
       - run: node tools/vrchat.mjs
         env:
-          VRC_COOKIE: ${{ secrets.VRC_COOKIE }}
+          VRC_USERNAME: ${{ secrets.VRC_USERNAME }}
+          VRC_PASSWORD: ${{ secrets.VRC_PASSWORD }}
+          VRC_TOTP_SECRET: ${{ secrets.VRC_TOTP_SECRET }}
