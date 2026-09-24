@@ -51,6 +51,14 @@
             <textarea id="x-text" name="text" rows="6" required data-tweet aria-describedby="x-counter"></textarea>
             <p class="field__counter" id="x-counter" data-counter>0 / 280</p>
           </div>
+          <div class="field field--full">
+            <span class="field__label">画像 <span class="field__hint">任意・4枚まで・1枚 5MB 以内</span></span>
+            <label class="drop" data-drop>
+              <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+              画像をここにドラッグ＆ドロップ、またはクリックして選択
+            </label>
+            <div class="thumbs" data-thumbs></div>
+          </div>
           <div class="field">
             <label for="x-due">投稿日時 <span class="field__hint">日本時間・今から5分後以降</span></label>
             <input id="x-due" name="dueAt" type="datetime-local" required>

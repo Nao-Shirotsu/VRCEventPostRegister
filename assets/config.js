@@ -25,6 +25,9 @@ const VRC_GROUP_ID = "grp_2e72b9b6-f353-47a5-beb9-ba474c6ff1fd";
 const jst = (iso) => new Date(iso).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", dateStyle: "short", timeStyle: "short" });
 
 window.APP_CONFIG = {
+  // 画像アップロード受付（gas/upload.gs をウェブアプリとしてデプロイした URL）
+  imageUploadUrl: "https://script.google.com/macros/s/AKfycbz87on2c7bSlc331d3Jx8cnKyLvMaPgcg4uuLdtA1iD_BkAZz5Av5vzKOEtsKx6vOSuuQ/exec",
+
   destinations: {
     // GitHub Actions（.github/workflows/buffer-post.yml）経由で Buffer に X の予約投稿を登録する
     x: {
@@ -34,7 +37,7 @@ window.APP_CONFIG = {
         repo: "Nao-Shirotsu/VRCEventPostRegister",
         workflow: "buffer-post.yml",
         ref: "main",
-        inputs: (d) => ({ text: d.get("text"), due_at: d.get("dueAt") }),
+        inputs: (d) => ({ text: d.get("text"), due_at: d.get("dueAt"), images: d.get("images") }),
         runningLabel: "Buffer に送信中…",
         doneMessage: (d) => `${jst(d.get("dueAt"))} の予約投稿として Buffer に登録しました。`,
       },

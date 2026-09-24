@@ -65,6 +65,15 @@ if (!text) fail("投稿文が空です。");
 if (Number.isNaN(dueAt.getTime())) fail("投稿日時が正しくありません。");
 if (dueAt <= new Date()) fail("投稿日時が過去になっています。");
 
+let images;
+try {
+  images = JSON.parse(inputs?.images || "[]");
+} catch {
+  fail("画像の指定を読み取れませんでした。");
+}
+if (!Array.isArray(images) || images.length > 4) fail("画像は4枚までです。");
+if (images.some((u) => typeof u !== "string" || !u.startsWith("https://"))) fail("画像の URL が正しくありません。");
+
 const channelId = await findXChannelId();
 
 // 3. 日時指定で予約投稿を作成（文字列は JSON.stringify で GraphQL の文字列リテラルとしてエスケープする）
@@ -76,6 +85,7 @@ const { createPost } = await gql(`
       schedulingType: automatic,
       mode: customScheduled,
       dueAt: ${JSON.stringify(dueAt.toISOString())}
+      ${images.length ? `, assets: [${images.map((url) => `{ image: { url: ${JSON.stringify(url)} } }`).join(", ")}]` : ""}
     }) {
       ... on PostActionSuccess { post { id dueAt } }
       ... on MutationError { message }

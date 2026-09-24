@@ -177,6 +177,7 @@ function fieldList(form) {
     else if (input.type === "datetime-local") value = value.replace("T", " ");
     dl.append(el("dt", { textContent: FIELD_LABELS[input.name] ?? input.name }), el("dd", { textContent: value || "—" }));
   }
+  if (form.imageFiles) dl.append(el("dt", { textContent: "画像" }), el("dd", { textContent: form.imageFiles.length ? `${form.imageFiles.length}枚` : "なし" }));
   return dl;
 }
 
@@ -217,6 +218,11 @@ const formatJST = (date) =>
  */
 async function post(dest, form, progress) {
   const data = new FormData(form);
+  // 画像があれば先にアップロードし、返ってきた URL の一覧を images として送る
+  if (form.imageFiles) {
+    if (form.imageFiles.length) progress("画像をアップロード中…");
+    data.set("images", JSON.stringify(form.imageFiles.length ? await uploadImages(form.imageFiles) : []));
+  }
   // datetime-local は日本時間として扱い、UTC の ISO 8601 に直して送る
   for (const input of form.querySelectorAll('input[type="datetime-local"]')) {
     if (input.value) data.set(input.name, new Date(`${input.value}:00+09:00`).toISOString());
@@ -441,6 +447,72 @@ function updateTweetCounter(textarea) {
   textarea.setCustomValidity(n > TWEET_LIMIT ? `X の上限（${TWEET_LIMIT}文字）を超えています。` : "");
 }
 
+/* ---------- 画像（GAS 経由で Google ドライブに保存） ---------- */
+
+const MAX_IMAGES = 4;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+// ドロップ欄のあるフォームは form.imageFiles に File の配列を持つ
+function setupDrop(drop) {
+  const form = drop.closest("form");
+  const input = $("input[type=file]", drop);
+  const thumbs = $("[data-thumbs]", drop.closest(".field"));
+  form.imageFiles = [];
+
+  const render = (error) => {
+    thumbs.replaceChildren(...form.imageFiles.map((file, i) => {
+      const remove = el("button", { type: "button", textContent: "×", ariaLabel: `${file.name} を外す` });
+      remove.addEventListener("click", () => { form.imageFiles.splice(i, 1); render(); });
+      return el("div", { className: "thumb" }, el("img", { src: URL.createObjectURL(file), alt: file.name }), remove);
+    }));
+    $(".drop__error", drop.parentElement)?.remove();
+    if (error) drop.after(el("p", { className: "drop__error", textContent: error }));
+  };
+  const add = (files) => {
+    const errors = [];
+    for (const file of files) {
+      if (!input.accept.split(",").includes(file.type)) errors.push(`${file.name}: JPEG / PNG / GIF / WebP のみ対応しています`);
+      else if (file.size > MAX_IMAGE_BYTES) errors.push(`${file.name}: 5MB を超えています`);
+      else if (form.imageFiles.length >= MAX_IMAGES) errors.push(`画像は${MAX_IMAGES}枚までです`);
+      else form.imageFiles.push(file);
+    }
+    render(errors.join(" / "));
+  };
+
+  input.addEventListener("change", () => { add(input.files); input.value = ""; });
+  drop.addEventListener("dragover", (ev) => { ev.preventDefault(); drop.toggleAttribute("data-over", true); });
+  drop.addEventListener("dragleave", () => drop.toggleAttribute("data-over", false));
+  drop.addEventListener("drop", (ev) => {
+    ev.preventDefault();
+    drop.toggleAttribute("data-over", false);
+    add(ev.dataTransfer.files);
+  });
+}
+
+const toBase64 = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(String(reader.result).split(",")[1]);
+  reader.onerror = () => reject(reader.error);
+  reader.readAsDataURL(file);
+});
+
+// GAS に画像を送り、ドライブに保存された画像の URL の一覧を受け取る
+async function uploadImages(files) {
+  const url = window.APP_CONFIG.imageUploadUrl;
+  if (!url) throw new SendError("画像のアップロード先が設定されていません（assets/config.js の imageUploadUrl）。");
+  const images = await Promise.all(files.map(async (f) => ({ name: f.name, mimeType: f.type, data: await toBase64(f) })));
+  let body;
+  try {
+    // Content-Type を付けない（text/plain になる）ことで、GAS でも CORS の事前確認なしに送れる
+    const res = await fetch(url, { method: "POST", body: JSON.stringify({ token, images }) });
+    body = await res.json();
+  } catch {
+    throw new SendError("画像をアップロードできませんでした。通信状況を確認してください。");
+  }
+  if (!body?.ok) throw new SendError(`画像をアップロードできませんでした: ${body?.error ?? "理由不明"}`);
+  return body.urls;
+}
+
 /* ---------- submit ---------- */
 
 function validate(card) {
@@ -507,6 +579,7 @@ if (remembered) {
 $("#gate-form").addEventListener("submit", onUnlock);
 $("#gate-lock").addEventListener("click", onLock);
 $$(".dest form").forEach((f) => f.addEventListener("submit", onCardSubmit));
+$$("[data-drop]").forEach(setupDrop);
 $$("[data-tweet]").forEach((t) => {
   t.addEventListener("input", () => updateTweetCounter(t));
   updateTweetCounter(t);

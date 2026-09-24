@@ -8,6 +8,7 @@ assets/config.js                    送信先の設定。手で編集する
 assets/app.js                       画面の動作（ゲート・確認ダイアログ・送信・結果表示）
 tools/buffer-post.mjs               Buffer に X の予約投稿を登録する（Actions から実行）
 .github/workflows/buffer-post.yml   サイトから起動されるワークフロー（X / Buffer）
+gas/upload.gs                       画像アップロード受付（Google Apps Script に貼って使う）
 tools/vrchat.mjs                    VRChat グループにイベント・投稿を登録する（Actions から実行）
 .github/workflows/vrchat.yml        サイトから起動されるワークフロー（VRChat）
 ```
@@ -46,6 +47,19 @@ GitHub API はブラウザから呼べるので、サイトからワークフロ
 
 3. **サイトで解錠**
    公開したサイトを開き、画面上部にトークンを入力する。
+
+### X の画像添付（GAS → Google ドライブ）
+
+Buffer は画像を「公開 URL」で受け取り、投稿時刻に取りに行く。サイトでドロップされた画像は
+Google Apps Script（`gas/upload.gs`）経由で Google ドライブに保存し、その URL を Buffer に渡す。
+GAS は GitHub トークンの持ち主がこのリポジトリに書き込めることを確認してから受け付ける。
+
+1. 保存先のフォルダーを Google ドライブに作る
+2. https://script.google.com で新しいプロジェクトを作り、`gas/upload.gs` の中身を貼る。`FOLDER_ID` を書き換える
+3. 「デプロイ」→「新しいデプロイ」→ 種類「ウェブアプリ」、実行ユーザー「自分」、アクセスできるユーザー「全員」
+4. 表示されたウェブアプリの URL を `assets/config.js` の `imageUploadUrl` に書く
+
+投稿時刻より前に、ドライブの画像を消したり共有を外したりしないこと。
 
 ## VRChat グループイベント・グループ投稿（GitHub Actions → VRChat API）
 

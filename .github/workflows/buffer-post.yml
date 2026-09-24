@@ -15,6 +15,11 @@ on:
         description: 投稿日時（ISO 8601）
         required: true
         type: string
+      images:
+        description: 画像の URL（JSON 配列・4枚まで）
+        required: false
+        type: string
+        default: "[]"
       request_id:
         description: サイトが結果を探すための ID
         required: true
