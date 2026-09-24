@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>VRC Event Post Register</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=IBM+Plex+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="assets/vault.js" defer></script>
+  <script src="assets/app.js" defer></script>
+</head>
+<body data-locked="true">
+  <header class="masthead">
+    <p class="masthead__eyebrow">VRC Event Post Register</p>
+    <h1 class="masthead__title">イベント告知をまとめて登録</h1>
+  </header>
+
+  <section class="gate" aria-labelledby="gate-title">
+    <form class="gate__form" id="gate-form" autocomplete="off">
+      <label class="gate__label" id="gate-title" for="passphrase">合言葉</label>
+      <div class="gate__row">
+        <input class="gate__input" id="passphrase" name="passphrase" type="password"
+               placeholder="例: sora-kaze-hana-042" spellcheck="false" autocapitalize="off" required>
+        <button class="btn btn--ink" type="submit" id="gate-submit">解錠</button>
+        <button class="btn btn--ghost" type="button" id="gate-lock" hidden>ロック</button>
+      </div>
+      <p class="gate__status" id="gate-status" role="status">ロック中 — 合言葉を入力すると各フォームに入力できます。</p>
+    </form>
+  </section>
+
+  <main class="dests">
+    <!-- 送信先 A -->
+    <section class="dest" data-dest="a" aria-labelledby="a-title">
+      <header class="dest__head">
+        <span class="dest__letter" aria-hidden="true">A</span>
+        <div class="dest__meta">
+          <h2 class="dest__name" id="a-title">送信先 A</h2>
+          <p class="dest__host" data-host>▒▒▒▒▒▒▒▒▒▒▒▒</p>
+        </div>
+        <p class="chip" data-state="idle" data-chip>未送信</p>
+      </header>
+      <form class="dest__form" novalidate>
+        <fieldset disabled>
+          <legend class="sr-only">送信先 A の入力内容</legend>
+          <div class="field field--full">
+            <label for="a-title-input">イベント名</label>
+            <input id="a-title-input" name="title" type="text" maxlength="60" required>
+          </div>
+          <div class="field">
+            <label for="a-date">開催日</label>
+            <input id="a-date" name="date" type="date" required>
+          </div>
+          <div class="field field--pair">
+            <div>
+              <label for="a-start">開始</label>
+              <input id="a-start" name="start" type="time" required>
+            </div>
+            <div>
+              <label for="a-end">終了</label>
+              <input id="a-end" name="end" type="time">
+            </div>
+          </div>
+          <div class="field">
+            <label for="a-organizer">主催者</label>
+            <input id="a-organizer" name="organizer" type="text" maxlength="40" required>
+          </div>
+          <div class="field">
+            <label for="a-genre">ジャンル</label>
+            <select id="a-genre" name="genre" required>
+              <option value="">選択してください</option>
+              <option>交流・雑談</option>
+              <option>音楽・DJ</option>
+              <option>学習・技術</option>
+              <option>ロールプレイ</option>
+              <option>その他</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="a-access">参加方法</label>
+            <select id="a-access" name="access" required>
+              <option value="">選択してください</option>
+              <option>パブリック</option>
+              <option>グループ</option>
+              <option>フレンド+</option>
+              <option>招待制</option>
+            </select>
+          </div>
+          <div class="field field--full">
+            <label for="a-description">説明 <span class="field__hint">500字まで</span></label>
+            <textarea id="a-description" name="description" rows="4" maxlength="500"></textarea>
+          </div>
+          <div class="dest__actions">
+            <button class="btn btn--accent" type="submit">送信先 A に送信</button>
+          </div>
+        </fieldset>
+      </form>
+    </section>
+
+    <!-- 送信先 B -->
+    <section class="dest" data-dest="b" aria-labelledby="b-title">
+      <header class="dest__head">
+        <span class="dest__letter" aria-hidden="true">B</span>
+        <div class="dest__meta">
+          <h2 class="dest__name" id="b-title">送信先 B</h2>
+          <p class="dest__host" data-host>▒▒▒▒▒▒▒▒▒▒▒▒</p>
+        </div>
+        <p class="chip" data-state="idle" data-chip>未送信</p>
+      </header>
+      <form class="dest__form" novalidate>
+        <fieldset disabled>
+          <legend class="sr-only">送信先 B の入力内容</legend>
+          <div class="field field--full">
+            <label for="b-title-input">イベント名</label>
+            <input id="b-title-input" name="title" type="text" maxlength="60" required>
+          </div>
+          <div class="field">
+            <label for="b-date">開催日</label>
+            <input id="b-date" name="date" type="date" required>
+          </div>
+          <div class="field field--pair">
+            <div>
+              <label for="b-start">開始</label>
+              <input id="b-start" name="start" type="time" required>
+            </div>
+            <div>
+              <label for="b-end">終了</label>
+              <input id="b-end" name="end" type="time">
+            </div>
+          </div>
+          <div class="field">
+            <label for="b-organizer">主催者</label>
+            <input id="b-organizer" name="organizer" type="text" maxlength="40" required>
+          </div>
+          <div class="field">
+            <label for="b-genre">ジャンル</label>
+            <select id="b-genre" name="genre" required>
+              <option value="">選択してください</option>
+              <option>交流・雑談</option>
+              <option>音楽・DJ</option>
+              <option>学習・技術</option>
+              <option>ロールプレイ</option>
+              <option>その他</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="b-access">参加方法</label>
+            <select id="b-access" name="access" required>
+              <option value="">選択してください</option>
+              <option>パブリック</option>
+              <option>グループ</option>
+              <option>フレンド+</option>
+              <option>招待制</option>
+            </select>
+          </div>
+          <div class="field field--full">
+            <label for="b-description">説明 <span class="field__hint">500字まで</span></label>
+            <textarea id="b-description" name="description" rows="4" maxlength="500"></textarea>
+          </div>
+          <div class="dest__actions">
+            <button class="btn btn--accent" type="submit">送信先 B に送信</button>
+          </div>
+        </fieldset>
+      </form>
+    </section>
+
+    <!-- 送信先 C -->
+    <section class="dest" data-dest="c" aria-labelledby="c-title">
+      <header class="dest__head">
+        <span class="dest__letter" aria-hidden="true">C</span>
+        <div class="dest__meta">
+          <h2 class="dest__name" id="c-title">送信先 C</h2>
+          <p class="dest__host" data-host>▒▒▒▒▒▒▒▒▒▒▒▒</p>
+        </div>
+        <p class="chip" data-state="idle" data-chip>未送信</p>
+      </header>
+      <form class="dest__form" novalidate>
+        <fieldset disabled>
+          <legend class="sr-only">送信先 C の入力内容</legend>
+          <div class="field field--full">
+            <label for="c-title-input">イベント名</label>
+            <input id="c-title-input" name="title" type="text" maxlength="60" required>
+          </div>
+          <div class="field">
+            <label for="c-date">開催日</label>
+            <input id="c-date" name="date" type="date" required>
+          </div>
+          <div class="field field--pair">
+            <div>
+              <label for="c-start">開始</label>
+              <input id="c-start" name="start" type="time" required>
+            </div>
+            <div>
+              <label for="c-end">終了</label>
+              <input id="c-end" name="end" type="time">
+            </div>
+          </div>
+          <div class="field">
+            <label for="c-organizer">主催者</label>
+            <input id="c-organizer" name="organizer" type="text" maxlength="40" required>
+          </div>
+          <div class="field">
+            <label for="c-genre">ジャンル</label>
+            <select id="c-genre" name="genre" required>
+              <option value="">選択してください</option>
+              <option>交流・雑談</option>
+              <option>音楽・DJ</option>
+              <option>学習・技術</option>
+              <option>ロールプレイ</option>
+              <option>その他</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="c-access">参加方法</label>
+            <select id="c-access" name="access" required>
+              <option value="">選択してください</option>
+              <option>パブリック</option>
+              <option>グループ</option>
+              <option>フレンド+</option>
+              <option>招待制</option>
+            </select>
+          </div>
+          <div class="field field--full">
+            <label for="c-description">説明 <span class="field__hint">500字まで</span></label>
+            <textarea id="c-description" name="description" rows="4" maxlength="500"></textarea>
+          </div>
+          <div class="dest__actions">
+            <button class="btn btn--accent" type="submit">送信先 C に送信</button>
+          </div>
+        </fieldset>
+      </form>
+    </section>
+  </main>
+
+  <footer class="bulk">
+    <div class="bulk__text">
+      <p class="bulk__title">一括送信</p>
+      <p class="bulk__note">A・B・C の3か所へ、それぞれのフォームの内容を順に送信します。</p>
+      <p class="bulk__status" id="bulk-status" role="status"></p>
+    </div>
+    <button class="btn btn--accent btn--lg" type="button" id="bulk-send" disabled>3か所に一括送信</button>
+  </footer>
+
+  <dialog class="confirm" id="confirm" aria-labelledby="confirm-title">
+    <form method="dialog" class="confirm__inner">
+      <h2 class="confirm__title" id="confirm-title"></h2>
+      <div class="confirm__body" id="confirm-body"></div>
+      <div class="confirm__actions">
+        <button class="btn btn--ghost" value="cancel" type="submit" autofocus>キャンセル</button>
+        <button class="btn btn--accent" value="ok" type="submit" id="confirm-ok"></button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

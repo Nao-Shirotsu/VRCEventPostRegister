@@ -1,0 +1,2 @@
+# 実際の送信先URL・トークン（平文）。暗号化後の assets/vault.js だけをコミットする
+tools/destinations.json
