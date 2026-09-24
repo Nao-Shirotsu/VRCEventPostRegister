@@ -1,0 +1,37 @@
+# サイトの「VRChat グループイベント」「VRChat グループ投稿」から GitHub API 経由で起動され、VRChat グループに登録する
+name: VRChat グループ登録
+
+# サイト側はこの名前に含まれる request_id で、自分が起動した実行を探して結果を確認する
+run-name: vrchat ${{ inputs.request_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: 登録する内容（JSON。kind が "event" か "post"）
+        required: true
+        type: string
+      request_id:
+        description: サイトが結果を探すための ID
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tools/vrchat.mjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # 入力はログに出さないよう、env ではなくスクリプトがイベントファイルから読む
+      - run: node tools/vrchat.mjs
+        env:
+          VRC_COOKIE: ${{ secrets.VRC_COOKIE }}

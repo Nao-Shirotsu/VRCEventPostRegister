@@ -23,6 +23,12 @@ const FIELD_LABELS = {
   description: "概要・説明",
   text: "投稿文",
   dueAt: "投稿日時",
+  startsAt: "開始",
+  endsAt: "終了",
+  category: "カテゴリー",
+  accessType: "公開範囲",
+  visibility: "公開範囲",
+  notify: "メンバーに通知",
 };
 
 // 解錠中だけメモリに持つ GitHub トークン。ロックすると消す
@@ -163,12 +169,13 @@ function el(tag, props = {}, ...children) {
 }
 
 function fieldList(form) {
-  const data = new FormData(form);
   const dl = el("dl");
-  for (const key of data.keys()) {
-    let value = String(data.get(key) ?? "").trim();
-    if (key === "dueAt" && value) value = value.replace("T", " ");
-    dl.append(el("dt", { textContent: FIELD_LABELS[key] ?? key }), el("dd", { textContent: value || "—" }));
+  for (const input of form.querySelectorAll("[name]")) {
+    let value = input.value.trim();
+    if (input.type === "checkbox") value = input.checked ? "する" : "しない";
+    else if (input.tagName === "SELECT") value = input.selectedOptions[0]?.textContent ?? "";
+    else if (input.type === "datetime-local") value = value.replace("T", " ");
+    dl.append(el("dt", { textContent: FIELD_LABELS[input.name] ?? input.name }), el("dd", { textContent: value || "—" }));
   }
   return dl;
 }
@@ -210,9 +217,9 @@ const formatJST = (date) =>
  */
 async function post(dest, form, progress) {
   const data = new FormData(form);
-  if (form.elements.dueAt) {
-    // datetime-local は日本時間として扱い、UTC の ISO 8601 に直して送る
-    data.set("dueAt", new Date(`${data.get("dueAt")}:00+09:00`).toISOString());
+  // datetime-local は日本時間として扱い、UTC の ISO 8601 に直して送る
+  for (const input of form.querySelectorAll('input[type="datetime-local"]')) {
+    if (input.value) data.set(input.name, new Date(`${input.value}:00+09:00`).toISOString());
   }
 
   if (dest.mock) return mockPost(dest, data);
@@ -302,6 +309,7 @@ async function github(path, init = {}) {
     const body = await res.json().catch(() => null);
     const hint = res.status === 401 ? "（トークンの期限切れかもしれません）"
       : res.status === 403 ? "（トークンの Actions 権限が Read and write になっているか確認してください）"
+      : res.status === 404 ? "（ワークフローのファイルが main に push されているか確認してください）"
       : "";
     throw new SendError(`GitHub API ${res.status}: ${body?.message ?? "エラー"}${hint}`);
   }
@@ -312,7 +320,7 @@ async function github(path, init = {}) {
  * ワークフローを起動し、終わるまで待って結果を返す。
  * dispatch API は実行 ID を返さないため、run-name に埋めた request_id で自分の実行を探す。
  */
-async function dispatchWorkflow({ repo, workflow, ref }, data, progress) {
+async function dispatchWorkflow({ repo, workflow, ref, inputs, runningLabel, doneMessage }, data, progress) {
   const requestId = crypto.randomUUID();
   const since = new Date(Date.now() - 60_000).toISOString();
   const base = `/repos/${repo}/actions/workflows/${encodeURIComponent(workflow)}`;
@@ -323,7 +331,7 @@ async function dispatchWorkflow({ repo, workflow, ref }, data, progress) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       ref,
-      inputs: { text: data.get("text"), due_at: data.get("dueAt"), request_id: requestId },
+      inputs: { ...inputs(data), request_id: requestId },
     }),
   });
   // 起動できた時点から、Actions の画面で進行状況を見られるようにする
@@ -341,12 +349,12 @@ async function dispatchWorkflow({ repo, workflow, ref }, data, progress) {
     } else {
       run = await github(`/repos/${repo}/actions/runs/${run.id}`);
     }
-    progress(run.status === "in_progress" ? "Buffer に送信中…" : "Actions 実行待ち…", actions);
+    progress(run.status === "in_progress" ? runningLabel ?? "実行中…" : "Actions 実行待ち…", actions);
     if (run.status !== "completed") continue;
 
     const log = { href: run.html_url, text: "GitHub Actionsログ ↗" };
     if (run.conclusion === "success") {
-      return { state: "ok", detail: `${formatJST(data.get("dueAt"))} の予約投稿として Buffer に登録しました。`, link: log };
+      return { state: "ok", detail: doneMessage?.(data) ?? "完了しました。", link: log };
     }
     throw new SendError(await failureReason(repo, run), log);
   }
@@ -442,6 +450,12 @@ function validate(card) {
     // Actions の起動に1分ほどかかるため、余裕を見て5分後以降に限る
     const tooSoon = due.value && new Date(`${due.value}:00+09:00`) < new Date(Date.now() + MIN_LEAD_MS);
     due.setCustomValidity(tooSoon ? "投稿日時は今から5分後以降にしてください。" : "");
+  }
+  const { startsAt, endsAt } = form.elements;
+  if (startsAt && endsAt) {
+    const start = new Date(`${startsAt.value}:00+09:00`);
+    startsAt.setCustomValidity(startsAt.value && start <= new Date() ? "開始日時は現在より後にしてください。" : "");
+    endsAt.setCustomValidity(endsAt.value && new Date(`${endsAt.value}:00+09:00`) <= start ? "終了日時は開始日時より後にしてください。" : "");
   }
   form.classList.add("was-checked");
   return form.checkValidity();

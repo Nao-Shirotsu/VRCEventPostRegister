@@ -230,6 +230,8 @@ textarea { resize: vertical; min-height: 96px; }
 }
 .field label:has(+ [required])::after,
 .field--pair label:has(+ [required])::after { content: " *"; color: var(--accent); }
+.field label.field__check { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink); }
+.field__check input { width: auto; margin: 0; }
 .field__hint { font-weight: 400; font-family: var(--f-mono); font-size: 11px; opacity: .8; }
 .field__counter { margin: 4px 0 0; text-align: right; font: 400 11px/1.4 var(--f-mono); color: var(--mute); }
 .field__counter[data-over] { color: var(--err); }

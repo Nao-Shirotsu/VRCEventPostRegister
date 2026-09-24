@@ -63,6 +63,111 @@
       </form>
     </section>
 
+    <!-- VRChat グループイベント（GitHub Actions 経由でグループカレンダーに作成） -->
+    <section class="dest" data-dest="vrc" aria-labelledby="vrc-title">
+      <header class="dest__head">
+        <span class="dest__letter" aria-hidden="true">G</span>
+        <div class="dest__meta">
+          <h2 class="dest__name" id="vrc-title">VRChat グループイベント</h2>
+          <p class="dest__host"><span data-host></span><a class="dest__check" data-check target="_blank" rel="noopener">グループ ↗</a></p>
+        </div>
+        <p class="chip" data-state="idle" data-chip>未送信</p>
+      </header>
+      <form class="dest__form" novalidate>
+        <fieldset disabled>
+          <legend class="sr-only">VRChat グループイベントの内容</legend>
+          <div class="field field--full">
+            <label for="vrc-title-input">タイトル <span class="field__hint">64文字まで</span></label>
+            <input id="vrc-title-input" name="title" type="text" maxlength="64" required>
+          </div>
+          <div class="field field--full">
+            <label for="vrc-description">説明</label>
+            <textarea id="vrc-description" name="description" rows="4" required></textarea>
+          </div>
+          <div class="field">
+            <label for="vrc-starts">開始 <span class="field__hint">日本時間</span></label>
+            <input id="vrc-starts" name="startsAt" type="datetime-local" required>
+          </div>
+          <div class="field">
+            <label for="vrc-ends">終了 <span class="field__hint">日本時間</span></label>
+            <input id="vrc-ends" name="endsAt" type="datetime-local" required>
+          </div>
+          <div class="field">
+            <label for="vrc-category">カテゴリー</label>
+            <select id="vrc-category" name="category" required>
+              <option value="">選択してください</option>
+              <option value="hangout">交流・雑談</option>
+              <option value="education">学習・教育</option>
+              <option value="arts">アート</option>
+              <option value="avatars">アバター</option>
+              <option value="music">音楽</option>
+              <option value="dance">ダンス</option>
+              <option value="performance">パフォーマンス</option>
+              <option value="film_media">映像・メディア</option>
+              <option value="gaming">ゲーム</option>
+              <option value="exploration">探索</option>
+              <option value="roleplaying">ロールプレイ</option>
+              <option value="wellness">ウェルネス</option>
+              <option value="other">その他</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="vrc-access">公開範囲</label>
+            <select id="vrc-access" name="accessType" required>
+              <option value="public">誰でも見られる（public）</option>
+              <option value="group">グループメンバーのみ（group）</option>
+            </select>
+          </div>
+          <div class="field field--full">
+            <label class="field__check"><input type="checkbox" name="notify" checked> グループメンバーに作成を通知する</label>
+          </div>
+          <div class="dest__actions">
+            <p class="dest__result" data-result role="status"></p>
+            <button class="btn btn--accent" type="submit">VRChat にイベントを作成</button>
+          </div>
+        </fieldset>
+      </form>
+    </section>
+
+    <!-- VRChat グループ投稿（GitHub Actions 経由でグループのお知らせに投稿） -->
+    <section class="dest" data-dest="vrcPost" aria-labelledby="vrcpost-title">
+      <header class="dest__head">
+        <span class="dest__letter" aria-hidden="true">P</span>
+        <div class="dest__meta">
+          <h2 class="dest__name" id="vrcpost-title">VRChat グループ投稿</h2>
+          <p class="dest__host"><span data-host></span><a class="dest__check" data-check target="_blank" rel="noopener">グループ ↗</a></p>
+        </div>
+        <p class="chip" data-state="idle" data-chip>未送信</p>
+      </header>
+      <form class="dest__form" novalidate>
+        <fieldset disabled>
+          <legend class="sr-only">VRChat グループ投稿の内容</legend>
+          <div class="field field--full">
+            <label for="vrcpost-title-input">タイトル</label>
+            <input id="vrcpost-title-input" name="title" type="text" required>
+          </div>
+          <div class="field field--full">
+            <label for="vrcpost-text">本文</label>
+            <textarea id="vrcpost-text" name="text" rows="5" required></textarea>
+          </div>
+          <div class="field">
+            <label for="vrcpost-visibility">公開範囲</label>
+            <select id="vrcpost-visibility" name="visibility" required>
+              <option value="group">グループメンバーのみ（group）</option>
+              <option value="public">誰でも見られる（public）</option>
+            </select>
+          </div>
+          <div class="field field--full">
+            <label class="field__check"><input type="checkbox" name="notify" checked> グループメンバーに通知する</label>
+          </div>
+          <div class="dest__actions">
+            <p class="dest__result" data-result role="status"></p>
+            <button class="btn btn--accent" type="submit">VRChat グループに投稿</button>
+          </div>
+        </fieldset>
+      </form>
+    </section>
+
     <!-- ワールド内イベントカレンダー（Google フォーム） -->
     <section class="dest" data-dest="calendar" aria-labelledby="calendar-title">
       <header class="dest__head">

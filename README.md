@@ -7,7 +7,10 @@ index.html / style.css
 assets/config.js                    送信先の設定。手で編集する
 assets/app.js                       画面の動作（ゲート・確認ダイアログ・送信・結果表示）
 tools/buffer-post.mjs               Buffer に X の予約投稿を登録する（Actions から実行）
-.github/workflows/buffer-post.yml   サイトから起動されるワークフロー
+.github/workflows/buffer-post.yml   サイトから起動されるワークフロー（X / Buffer）
+tools/vrc-login.mjs                 VRChat にログインして Cookie を表示する（手元で実行）
+tools/vrchat.mjs                    VRChat グループにイベント・投稿を登録する（Actions から実行）
+.github/workflows/vrchat.yml        サイトから起動されるワークフロー（VRChat）
 ```
 
 ## GitHub トークンでの解錠
@@ -44,6 +47,26 @@ GitHub API はブラウザから呼べるので、サイトからワークフロ
 
 3. **サイトで解錠**
    公開したサイトを開き、画面上部にトークンを入力する。
+
+## VRChat グループイベント・グループ投稿（GitHub Actions → VRChat API）
+
+VRChat API もブラウザから直接呼べないため、X と同じく Actions 経由で作成する。
+
+- ログインは手元で1回だけ行い、発行された Cookie をシークレット `VRC_COOKIE` に登録する。パスワードはどこにも保存しない。
+  VRChat は ID・パスワードでのログインごとにセッションを消費し、その数に上限があるため、毎回ログインはしない。
+- Cookie が切れると、サイトに「VRChat のログインが切れています」と表示される。そのときだけ再ログインする。
+- グループのカレンダー管理権限だけを持つサブアカウントを使う。
+
+### 初期設定
+
+1. 対象グループは `assets/config.js` の `VRC_GROUP_ID` で指定する
+2. 手元でログインして Cookie を取得する
+
+   ```sh
+   node tools/vrc-login.mjs
+   ```
+
+3. 表示された1行を Repository secrets の `VRC_COOKIE` に登録する
 
 ## 送信結果の表示
 
