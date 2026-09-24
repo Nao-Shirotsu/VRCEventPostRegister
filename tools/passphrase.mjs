@@ -1,17 +1,18 @@
 #!/usr/bin/env node
 /*
- * 送信先設定を合言葉で暗号化して assets/vault.js を生成する。
+ * 合言葉を発行し、そのハッシュだけを assets/passphrases.js に書き出す。
+ * 合言葉そのものはファイルに残らず、標準出力に一度だけ表示される。
  *
  *   # 固定の合言葉（期限なし / --until で期限つき）
- *   node tools/seal.mjs --config tools/destinations.json --pass "好きな合言葉" [--until 2026-12-31]
+ *   node tools/passphrase.mjs --pass "好きな合言葉" [--until 2026-12-31]
  *
  *   # 日替わり合言葉を30日分まとめて発行（開始日省略時は今日・JST）
- *   node tools/seal.mjs --config tools/destinations.json --daily 30 [--start 2026-10-01]
+ *   node tools/passphrase.mjs --daily 30 [--start 2026-10-01]
  *
- * --pass と --daily は併用できる（管理者用の固定合言葉 + 配布用の日替わり合言葉など）。
- * 発行した合言葉は標準出力にだけ表示される。ファイルには残らないので控えておくこと。
+ * --pass と --daily は併用できる。実行するたびに assets/passphrases.js は作り直される
+ * （それまでの合言葉はすべて無効になる）。
  */
-import { readFile, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 
 const ITERATIONS = 250_000;
@@ -28,8 +29,7 @@ const WORDS = [
 
 const { values: args } = parseArgs({
   options: {
-    config: { type: "string", default: "tools/destinations.json" },
-    out: { type: "string", default: "assets/vault.js" },
+    out: { type: "string", default: "assets/passphrases.js" },
     pass: { type: "string" },
     until: { type: "string" },
     daily: { type: "string" },
@@ -58,27 +58,22 @@ function randomPass() {
   return `${words.join("-")}-${String(r[3] % 1000).padStart(3, "0")}`;
 }
 
-async function seal(plaintext, pass, from, until) {
+async function hashSlot(pass, from, until) {
   const salt = crypto.getRandomValues(new Uint8Array(16));
-  const iv = crypto.getRandomValues(new Uint8Array(12));
   const base = await crypto.subtle.importKey(
-    "raw", new TextEncoder().encode(normalizePass(pass)), "PBKDF2", false, ["deriveKey"],
+    "raw", new TextEncoder().encode(normalizePass(pass)), "PBKDF2", false, ["deriveBits"],
   );
-  const key = await crypto.subtle.deriveKey(
-    { name: "PBKDF2", hash: "SHA-256", salt, iterations: ITERATIONS },
-    base, { name: "AES-GCM", length: 256 }, false, ["encrypt"],
+  const hash = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", hash: "SHA-256", salt, iterations: ITERATIONS }, base, 256,
   );
-  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plaintext);
-  return { from: from ?? null, until: until ?? null, salt: b64(salt), iv: b64(iv), ct: b64(ct) };
+  return { from: from ?? null, until: until ?? null, salt: b64(salt), hash: b64(hash) };
 }
 
-const payload = JSON.parse(await readFile(args.config, "utf8"));
-const plaintext = new TextEncoder().encode(JSON.stringify(payload));
 const slots = [];
 const issued = [];
 
 if (args.pass) {
-  slots.push(await seal(plaintext, args.pass, null, args.until));
+  slots.push(await hashSlot(args.pass, null, args.until));
   issued.push(["固定", args.until ? `〜${args.until}` : "期限なし", args.pass]);
 }
 if (args.daily) {
@@ -86,16 +81,16 @@ if (args.daily) {
   for (let i = 0; i < Number(args.daily); i++) {
     const day = addDays(start, i);
     const pass = randomPass();
-    slots.push(await seal(plaintext, pass, day, day));
+    slots.push(await hashSlot(pass, day, day));
     issued.push(["日替わり", day, pass]);
   }
 }
 
-const vault = { v: 1, iterations: ITERATIONS, slots };
 await writeFile(
   args.out,
-  `// tools/seal.mjs で生成。手で編集しないこと。\nwindow.VAULT = ${JSON.stringify(vault, null, 2)};\n`,
+  `// tools/passphrase.mjs で生成。手で編集しないこと。合言葉のハッシュのみを含む。\n` +
+  `window.PASSPHRASES = ${JSON.stringify({ iterations: ITERATIONS, slots }, null, 2)};\n`,
 );
 
-console.log(`${args.out} に ${slots.length} 件の合言葉スロットを書き出しました。\n`);
+console.log(`${args.out} に ${slots.length} 件の合言葉を書き出しました。\n`);
 for (const [kind, when, pass] of issued) console.log(`${kind}\t${when}\t${pass}`);

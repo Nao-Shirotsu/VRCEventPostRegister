@@ -9,6 +9,7 @@
   --accent-ink: #FFFFFF;
   --ok: #0C8A5E;
   --err: #C4372C;
+  --warn: #9A6200;
   --hatch: rgba(20, 22, 27, .10);
 
   --f-display: "DotGothic16", "IBM Plex Sans JP", sans-serif;
@@ -31,12 +32,13 @@
     --accent-ink: #0B0D12;
     --ok: #3CC48F;
     --err: #FF7A6E;
+    --warn: #E3A948;
     --hatch: rgba(232, 234, 239, .07);
   }
 }
 :root[data-theme="dark"] {
   --paper: #111318; --card: #1A1D24; --ink: #E8EAEF; --mute: #9199A8; --line: #2E333D;
-  --accent: #6F83FF; --accent-ink: #0B0D12; --ok: #3CC48F; --err: #FF7A6E; --hatch: rgba(232, 234, 239, .07);
+  --accent: #6F83FF; --accent-ink: #0B0D12; --ok: #3CC48F; --err: #FF7A6E; --warn: #E3A948; --hatch: rgba(232, 234, 239, .07);
 }
 
 /* ---------- base ---------- */
@@ -171,6 +173,8 @@ textarea { resize: vertical; min-height: 96px; }
 .dest__meta { flex: 1; min-width: 0; }
 .dest__name { margin: 0; font-size: 17px; font-weight: 700; line-height: 1.3; }
 .dest__host {
+  display: flex;
+  gap: 10px;
   margin: 2px 0 0;
   font: 400 12px/1.4 var(--f-mono);
   color: var(--mute);
@@ -178,6 +182,9 @@ textarea { resize: vertical; min-height: 96px; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.dest__host [data-host] { overflow: hidden; text-overflow: ellipsis; }
+.dest__check { color: var(--accent); text-decoration: none; flex: none; }
+.dest__check:hover { text-decoration: underline; }
 
 .chip {
   margin: 0;
@@ -191,6 +198,7 @@ textarea { resize: vertical; min-height: 96px; }
 .chip[data-state="busy"] { color: var(--accent); border-color: var(--accent); }
 .chip[data-state="ok"]   { color: var(--ok);  border-color: var(--ok); }
 .chip[data-state="err"]  { color: var(--err); border-color: var(--err); }
+.chip[data-state="unknown"] { color: var(--warn); border-color: var(--warn); }
 
 .dest__form fieldset {
   border: 0;
@@ -217,9 +225,21 @@ textarea { resize: vertical; min-height: 96px; }
 .dest__actions {
   grid-column: 1 / -1;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 16px;
   padding-top: 6px;
 }
+.dest__result {
+  flex: 1;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.dest__result[data-state="ok"] { color: var(--ok); }
+.dest__result[data-state="unknown"] { color: var(--warn); }
+.dest__result[data-state="err"] { color: var(--err); }
+.dest__result a { color: var(--accent); white-space: nowrap; }
 
 /* signature: the shutter. Locked cards sit behind a hatched panel that lifts on unlock. */
 .dest::after {
@@ -257,6 +277,7 @@ textarea { resize: vertical; min-height: 96px; }
 .bulk__status:empty { display: none; }
 .bulk__status[data-tone="ok"] { color: var(--ok); }
 .bulk__status[data-tone="err"] { color: var(--err); }
+.bulk__status[data-tone="unknown"] { color: var(--warn); }
 
 /* ---------- dialog ---------- */
 .confirm {
@@ -291,9 +312,12 @@ textarea { resize: vertical; min-height: 96px; }
   .masthead { padding-top: 36px; }
   .dest__head { flex-wrap: wrap; }
   .dest__letter { font-size: 36px; }
+  .dest__meta { flex-basis: calc(100% - 36px * 1.1 - 14px); }
   .chip { order: 3; margin-left: calc(1.1 * 36px + 14px); }
   .dest__form fieldset { grid-template-columns: 1fr; }
+  .dest__actions { flex-direction: column-reverse; align-items: stretch; }
   .dest__actions .btn { width: 100%; }
+  .dest__result:empty { display: none; }
   .bulk { flex-direction: column; align-items: stretch; }
   .gate__row { flex-wrap: wrap; }
   .gate__input { flex-basis: 100%; }

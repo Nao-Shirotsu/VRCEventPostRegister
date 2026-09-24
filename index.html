@@ -9,7 +9,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=IBM+Plex+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <script src="assets/vault.js" defer></script>
+  <script src="assets/config.js" defer></script>
+  <script src="assets/passphrases.js" defer></script>
   <script src="assets/app.js" defer></script>
 </head>
 <body data-locked="true">
@@ -38,7 +39,7 @@
         <span class="dest__letter" aria-hidden="true">A</span>
         <div class="dest__meta">
           <h2 class="dest__name" id="a-title">送信先 A</h2>
-          <p class="dest__host" data-host>▒▒▒▒▒▒▒▒▒▒▒▒</p>
+          <p class="dest__host"><span data-host></span><a class="dest__check" data-check target="_blank" rel="noopener">掲載ページ ↗</a></p>
         </div>
         <p class="chip" data-state="idle" data-chip>未送信</p>
       </header>
@@ -93,6 +94,7 @@
             <textarea id="a-description" name="description" rows="4" maxlength="500"></textarea>
           </div>
           <div class="dest__actions">
+            <p class="dest__result" data-result role="status"></p>
             <button class="btn btn--accent" type="submit">送信先 A に送信</button>
           </div>
         </fieldset>
@@ -105,7 +107,7 @@
         <span class="dest__letter" aria-hidden="true">B</span>
         <div class="dest__meta">
           <h2 class="dest__name" id="b-title">送信先 B</h2>
-          <p class="dest__host" data-host>▒▒▒▒▒▒▒▒▒▒▒▒</p>
+          <p class="dest__host"><span data-host></span><a class="dest__check" data-check target="_blank" rel="noopener">掲載ページ ↗</a></p>
         </div>
         <p class="chip" data-state="idle" data-chip>未送信</p>
       </header>
@@ -160,6 +162,7 @@
             <textarea id="b-description" name="description" rows="4" maxlength="500"></textarea>
           </div>
           <div class="dest__actions">
+            <p class="dest__result" data-result role="status"></p>
             <button class="btn btn--accent" type="submit">送信先 B に送信</button>
           </div>
         </fieldset>
@@ -172,7 +175,7 @@
         <span class="dest__letter" aria-hidden="true">C</span>
         <div class="dest__meta">
           <h2 class="dest__name" id="c-title">送信先 C</h2>
-          <p class="dest__host" data-host>▒▒▒▒▒▒▒▒▒▒▒▒</p>
+          <p class="dest__host"><span data-host></span><a class="dest__check" data-check target="_blank" rel="noopener">掲載ページ ↗</a></p>
         </div>
         <p class="chip" data-state="idle" data-chip>未送信</p>
       </header>
@@ -227,6 +230,7 @@
             <textarea id="c-description" name="description" rows="4" maxlength="500"></textarea>
           </div>
           <div class="dest__actions">
+            <p class="dest__result" data-result role="status"></p>
             <button class="btn btn--accent" type="submit">送信先 C に送信</button>
           </div>
         </fieldset>

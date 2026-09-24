@@ -1,7 +1,0 @@
-{
-  "destinations": {
-    "a": { "name": "送信先 A", "url": "mock:a" },
-    "b": { "name": "送信先 B", "url": "mock:b" },
-    "c": { "name": "送信先 C", "url": "mock:c" }
-  }
-}
