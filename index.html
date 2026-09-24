@@ -10,7 +10,6 @@
   <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=IBM+Plex+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="assets/config.js" defer></script>
-  <script src="assets/passphrases.js" defer></script>
   <script src="assets/app.js" defer></script>
 </head>
 <body data-locked="true">
@@ -21,81 +20,44 @@
 
   <section class="gate" aria-labelledby="gate-title">
     <form class="gate__form" id="gate-form" autocomplete="off">
-      <label class="gate__label" id="gate-title" for="passphrase">合言葉</label>
+      <label class="gate__label" id="gate-title" for="token">GitHub トークン</label>
       <div class="gate__row">
-        <input class="gate__input" id="passphrase" name="passphrase" type="password"
-               placeholder="例: sora-kaze-hana-042" spellcheck="false" autocapitalize="off" required>
+        <input class="gate__input" id="token" name="token" type="password"
+               placeholder="github_pat_…" spellcheck="false" autocapitalize="off" required>
         <button class="btn btn--ink" type="submit" id="gate-submit">解錠</button>
         <button class="btn btn--ghost" type="button" id="gate-lock" hidden>ロック</button>
       </div>
-      <p class="gate__status" id="gate-status" role="status">ロック中 — 合言葉を入力すると各フォームに入力できます。</p>
+      <label class="gate__remember"><input type="checkbox" id="remember"> この端末に記憶する（共用 PC では使わない）</label>
+      <p class="gate__status" id="gate-status" role="status">ロック中 — トークンを入力すると各フォームに入力できます。</p>
     </form>
   </section>
 
   <main class="dests">
-    <!-- 送信先 A -->
-    <section class="dest" data-dest="a" aria-labelledby="a-title">
+    <!-- 送信先 X（Buffer 経由の予約投稿） -->
+    <section class="dest" data-dest="x" aria-labelledby="x-title">
       <header class="dest__head">
-        <span class="dest__letter" aria-hidden="true">A</span>
+        <span class="dest__letter" aria-hidden="true">X</span>
         <div class="dest__meta">
-          <h2 class="dest__name" id="a-title">送信先 A</h2>
-          <p class="dest__host"><span data-host></span><a class="dest__check" data-check target="_blank" rel="noopener">掲載ページ ↗</a></p>
+          <h2 class="dest__name" id="x-title">X</h2>
+          <p class="dest__host"><span data-host></span><a class="dest__check" data-check target="_blank" rel="noopener">予約一覧 ↗</a></p>
         </div>
         <p class="chip" data-state="idle" data-chip>未送信</p>
       </header>
       <form class="dest__form" novalidate>
         <fieldset disabled>
-          <legend class="sr-only">送信先 A の入力内容</legend>
+          <legend class="sr-only">X の予約投稿の内容</legend>
           <div class="field field--full">
-            <label for="a-title-input">イベント名</label>
-            <input id="a-title-input" name="title" type="text" maxlength="60" required>
+            <label for="x-text">投稿文</label>
+            <textarea id="x-text" name="text" rows="6" required data-tweet aria-describedby="x-counter"></textarea>
+            <p class="field__counter" id="x-counter" data-counter>0 / 280</p>
           </div>
           <div class="field">
-            <label for="a-date">開催日</label>
-            <input id="a-date" name="date" type="date" required>
-          </div>
-          <div class="field field--pair">
-            <div>
-              <label for="a-start">開始</label>
-              <input id="a-start" name="start" type="time" required>
-            </div>
-            <div>
-              <label for="a-end">終了</label>
-              <input id="a-end" name="end" type="time">
-            </div>
-          </div>
-          <div class="field">
-            <label for="a-organizer">主催者</label>
-            <input id="a-organizer" name="organizer" type="text" maxlength="40" required>
-          </div>
-          <div class="field">
-            <label for="a-genre">ジャンル</label>
-            <select id="a-genre" name="genre" required>
-              <option value="">選択してください</option>
-              <option>交流・雑談</option>
-              <option>音楽・DJ</option>
-              <option>学習・技術</option>
-              <option>ロールプレイ</option>
-              <option>その他</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="a-access">参加方法</label>
-            <select id="a-access" name="access" required>
-              <option value="">選択してください</option>
-              <option>パブリック</option>
-              <option>グループ</option>
-              <option>フレンド+</option>
-              <option>招待制</option>
-            </select>
-          </div>
-          <div class="field field--full">
-            <label for="a-description">説明 <span class="field__hint">500字まで</span></label>
-            <textarea id="a-description" name="description" rows="4" maxlength="500"></textarea>
+            <label for="x-due">投稿日時 <span class="field__hint">日本時間</span></label>
+            <input id="x-due" name="dueAt" type="datetime-local" required>
           </div>
           <div class="dest__actions">
             <p class="dest__result" data-result role="status"></p>
-            <button class="btn btn--accent" type="submit">送信先 A に送信</button>
+            <button class="btn btn--accent" type="submit">X の予約投稿を登録</button>
           </div>
         </fieldset>
       </form>
@@ -241,7 +203,7 @@
   <footer class="bulk">
     <div class="bulk__text">
       <p class="bulk__title">一括送信</p>
-      <p class="bulk__note">A・B・C の3か所へ、それぞれのフォームの内容を順に送信します。</p>
+      <p class="bulk__note">X・B・C の3か所へ、それぞれのフォームの内容を順に送信します。</p>
       <p class="bulk__status" id="bulk-status" role="status"></p>
     </div>
     <button class="btn btn--accent btn--lg" type="button" id="bulk-send" disabled>3か所に一括送信</button>

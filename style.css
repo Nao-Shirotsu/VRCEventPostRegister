@@ -97,6 +97,15 @@ body {
   font-size: 16px;
   letter-spacing: .04em;
 }
+.gate__remember {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--mute);
+}
+.gate__remember input { width: auto; margin: 0; }
 .gate__status {
   margin: 10px 0 0;
   font: 400 13px/1.5 var(--f-mono);
@@ -222,6 +231,8 @@ textarea { resize: vertical; min-height: 96px; }
 .field label:has(+ [required])::after,
 .field--pair label:has(+ [required])::after { content: " *"; color: var(--accent); }
 .field__hint { font-weight: 400; font-family: var(--f-mono); font-size: 11px; opacity: .8; }
+.field__counter { margin: 4px 0 0; text-align: right; font: 400 11px/1.4 var(--f-mono); color: var(--mute); }
+.field__counter[data-over] { color: var(--err); }
 .dest__actions {
   grid-column: 1 / -1;
   display: flex;

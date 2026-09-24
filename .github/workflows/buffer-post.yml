@@ -1,0 +1,43 @@
+# サイトの「X の予約投稿を登録」から GitHub API 経由で起動され、Buffer に予約投稿を登録する
+name: Buffer 予約投稿
+
+# サイト側はこの名前に含まれる request_id で、自分が起動した実行を探して結果を確認する
+run-name: buffer-post ${{ inputs.request_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      text:
+        description: 投稿文
+        required: true
+        type: string
+      due_at:
+        description: 投稿日時（ISO 8601）
+        required: true
+        type: string
+      request_id:
+        description: サイトが結果を探すための ID
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tools/buffer-post.mjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # 入力（投稿文・日時）はログに出さないよう、env ではなくスクリプトがイベントファイルから読む
+      - run: node tools/buffer-post.mjs
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          # シークレットと変数のどちらに登録してもよい
+          BUFFER_CHANNEL_ID: ${{ secrets.BUFFER_CHANNEL_ID || vars.BUFFER_CHANNEL_ID }}
