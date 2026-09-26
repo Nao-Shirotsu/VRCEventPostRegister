@@ -60,6 +60,12 @@ if (p.kind === "event") {
     category: p.category,
     accessType: p.accessType,
     sendCreationNotification: Boolean(p.notify),
+    // 省略すると 500 (Application error) になる疑いがあるため、空でも明示して送る
+    languages: [],
+    platforms: [],
+    tags: [],
+    isDraft: false,
+    featured: false,
   };
 } else if (p.kind === "post") {
   if (!p.text) fail("本文が空です。");
@@ -92,8 +98,10 @@ async function call(apiPath, init = {}) {
     const [name, value] = c.split(";")[0].split("=");
     cookies.set(name.trim(), value);
   }
-  const json = await res.json().catch(() => null);
-  return { res, json, message: json?.error?.message ?? `HTTP ${res.status}` };
+  const text = await res.text();
+  let json = null;
+  try { json = JSON.parse(text); } catch {}
+  return { res, json, text, message: json?.error?.message ?? `HTTP ${res.status}` };
 }
 
 // 認証アプリと同じ6桁のコードを秘密鍵から作る（RFC 6238, SHA-1, 30秒）
@@ -142,6 +150,11 @@ await login();
 const created = await call(path, { method: "POST", body: JSON.stringify(body) });
 await logout();
 
+if (!created.res.ok) {
+  // 原因調査用。送った項目名（値は出さない）と、VRChat が返した本文をそのままログに残す
+  console.log(`request: POST ${path} keys=${Object.keys(body).join(",")}`);
+  console.log(`response: ${created.res.status} ${created.text.slice(0, 2000)}`);
+}
 if (created.res.status === 403) {
   fail(`VRChat API 403: ${created.message}（サブアカウントのグループ内の権限を確認してください）`);
 }

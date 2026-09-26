@@ -217,15 +217,17 @@ const formatJST = (date) =>
  * @returns {Promise<{ state: "ok" | "unknown", detail: string, link?: { href: string, text: string } }>}
  */
 async function post(dest, form, progress) {
+  // 送信中にフォームが空にされても影響しないよう、await より前に入力値をすべて読み取っておく
   const data = new FormData(form);
-  // 画像があれば先にアップロードし、返ってきた URL の一覧を images として送る
-  if (form.imageFiles) {
-    if (form.imageFiles.length) progress("画像をアップロード中…");
-    data.set("images", JSON.stringify(form.imageFiles.length ? await uploadImages(form.imageFiles) : []));
-  }
+  const files = form.imageFiles && [...form.imageFiles];
   // datetime-local は日本時間として扱い、UTC の ISO 8601 に直して送る
   for (const input of form.querySelectorAll('input[type="datetime-local"]')) {
     if (input.value) data.set(input.name, new Date(`${input.value}:00+09:00`).toISOString());
+  }
+  // 画像があれば先にアップロードし、返ってきた URL の一覧を images として送る
+  if (files) {
+    if (files.length) progress("画像をアップロード中…");
+    data.set("images", JSON.stringify(files.length ? await uploadImages(files) : []));
   }
 
   if (dest.mock) return mockPost(dest, data);
@@ -395,15 +397,14 @@ const CHIP_TEXT = { ok: "送信成功", unknown: "送信済み・結果不明", 
  * 送信中は見出し（busyLabel）を大きく、進み具合（detail）をその下に小さく出す。
  * 成功時に doneLabel があれば、それを大きく出してから詳細を添える。
  */
-function showResult(card, state, detail, link) {
-  const dest = DESTINATIONS[card.dataset.dest];
+function showResult(job, state, detail, link) {
+  const { dest, chip, result } = job;
+  if (job.close) job.close.hidden = state === "busy";
   const busyLabel = dest.busyLabel ?? "送信中…";
-  const chip = $("[data-chip]", card);
   const time = new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
   chip.dataset.state = state;
   chip.textContent = state === "busy" ? busyLabel : `${CHIP_TEXT[state]} ${time}`;
 
-  const result = $("[data-result]", card);
   result.dataset.state = state;
   result.replaceChildren();
   const anchor = (l) => el("a", { href: l.href, target: "_blank", rel: "noopener", textContent: l.text });
@@ -479,6 +480,8 @@ function setupDrop(drop) {
     render(errors.join(" / "));
   };
 
+  form.clearImages = () => { form.imageFiles = []; render(); };
+
   input.addEventListener("change", () => { add(input.files); input.value = ""; });
   drop.addEventListener("dragover", (ev) => { ev.preventDefault(); drop.toggleAttribute("data-over", true); });
   drop.addEventListener("dragleave", () => drop.toggleAttribute("data-over", false));
@@ -533,22 +536,85 @@ function validate(card) {
   return form.checkValidity();
 }
 
+/**
+ * 送信を1件行う。表示先（job.chip / job.result）はカードの結果欄から始まり、
+ * 「別の投稿を作成」で切り出されると切り出したカードに差し替わる。
+ */
 async function sendCard(card) {
-  const btn = $(".dest__actions .btn", card);
+  const form = $("form", card);
+  const btn = $(".dest__actions [type=submit]", card);
+  const job = {
+    dest: DESTINATIONS[card.dataset.dest],
+    chip: $("[data-chip]", card),
+    result: $("[data-result]", card),
+    // 切り出したときに表示する入力内容。送信を押した時点の値を控えておく
+    summary: fieldList(form),
+    images: form.imageFiles ? [...form.imageFiles] : [],
+  };
+  card.job = job;
   btn.disabled = true;
-  showResult(card, "busy");
+  $("[data-fork]", card).hidden = false;
+  showResult(job, "busy");
   try {
-    const progress = (text, link) => showResult(card, "busy", text, link);
-    const { state, detail, link } = await post(DESTINATIONS[card.dataset.dest], $("form", card), progress);
-    showResult(card, state, detail, link);
+    const progress = (text, link) => showResult(job, "busy", text, link);
+    const { state, detail, link } = await post(job.dest, form, progress);
+    showResult(job, state, detail, link);
     return state;
   } catch (err) {
-    if (err instanceof SendError) showResult(card, "err", err.message, err.link);
-    else showResult(card, "err", `想定外のエラー: ${err.message}`);
+    if (err instanceof SendError) showResult(job, "err", err.message, err.link);
+    else showResult(job, "err", `想定外のエラー: ${err.message}`);
     return "err";
   } finally {
-    btn.disabled = false;
+    // 切り出し済みなら、カードのボタンはもう新しい入力のもの
+    if (card.job === job) btn.disabled = false;
   }
+}
+
+/** カードの送信状況と入力内容を、すぐ下の別カードに切り出し、フォームを空に戻す */
+function forkCard(card) {
+  const job = card.job;
+  if (!job) return;
+  card.job = null;
+
+  const chip = job.chip.cloneNode(true);
+  const result = job.result.cloneNode(true);
+  delete chip.dataset.chip;
+  delete result.dataset.result;
+  const close = el("button", { className: "btn btn--ghost job__close", type: "button", textContent: "閉じる" });
+  const node = el("section", { className: "job", ariaLabel: `${job.dest.name} の送信` },
+    el("header", { className: "job__head" },
+      el("span", { className: "job__name", textContent: job.dest.name }),
+      chip,
+    ),
+    el("div", { className: "job__summary" }, job.summary),
+    job.images.length
+      ? el("div", { className: "thumbs" }, ...job.images.map((f) => el("div", { className: "thumb" }, el("img", { src: URL.createObjectURL(f), alt: f.name }))))
+      : null,
+    el("div", { className: "job__foot" }, result, close),
+  );
+  close.addEventListener("click", () => node.remove());
+  Object.assign(job, { chip, result, close });
+  close.hidden = chip.dataset.state === "busy";
+  card.after(node);
+
+  resetCard(card);
+}
+
+function resetCard(card) {
+  const form = $("form", card);
+  form.reset();
+  form.classList.remove("was-checked");
+  form.clearImages?.();
+  $$("[data-tweet]", form).forEach(updateTweetCounter);
+  const chip = $("[data-chip]", card);
+  chip.dataset.state = "idle";
+  chip.textContent = "未送信";
+  const result = $("[data-result]", card);
+  delete result.dataset.state;
+  result.replaceChildren();
+  $("[data-fork]", card).hidden = true;
+  $(".dest__actions [type=submit]", card).disabled = false;
+  $("input, textarea", form)?.focus();
 }
 
 async function onCardSubmit(ev) {
@@ -579,6 +645,7 @@ if (remembered) {
 $("#gate-form").addEventListener("submit", onUnlock);
 $("#gate-lock").addEventListener("click", onLock);
 $$(".dest form").forEach((f) => f.addEventListener("submit", onCardSubmit));
+$$("[data-fork]").forEach((b) => b.addEventListener("click", () => forkCard(b.closest(".dest"))));
 $$("[data-drop]").forEach(setupDrop);
 $$("[data-tweet]").forEach((t) => {
   t.addEventListener("input", () => updateTweetCounter(t));

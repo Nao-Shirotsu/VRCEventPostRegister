@@ -308,6 +308,32 @@ textarea { resize: vertical; min-height: 96px; }
 }
 @keyframes pulse { 50% { opacity: .45; } }
 
+/* 「別の投稿を作成」で切り出した送信中カード */
+.job {
+  margin-top: -14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: calc(var(--r) * 2);
+  padding: 16px clamp(16px, 3vw, 28px) 18px;
+  font-size: 14px;
+}
+.job:has(.chip[data-state="ok"]) { border-left-color: var(--ok); }
+.job:has(.chip[data-state="err"]) { border-left-color: var(--err); }
+.job:has(.chip[data-state="unknown"]) { border-left-color: var(--warn); }
+.job__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px dashed var(--line);
+}
+.job__name { flex: 1; min-width: 0; font-weight: 700; }
+.job__summary dd { max-height: 8.5em; overflow: auto; }
+.job .thumb img { width: 64px; height: 64px; }
+.job__foot { display: flex; align-items: flex-end; gap: 16px; margin-top: 14px; }
+
 /* embedded external form */
 .dest__embed {
   display: block;
@@ -351,14 +377,14 @@ textarea { resize: vertical; min-height: 96px; }
 .confirm__inner { padding: 22px 22px 18px; }
 .confirm__title { margin: 0 0 14px; font: 400 20px/1.35 var(--f-display); }
 .confirm__body { font-size: 14px; }
-.confirm__body dl {
+.confirm__body dl, .job__summary dl {
   display: grid;
   grid-template-columns: max-content 1fr;
   gap: 4px 14px;
   margin: 0;
 }
-.confirm__body dt { color: var(--mute); font-size: 12px; padding-top: 2px; }
-.confirm__body dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.confirm__body dt, .job__summary dt { color: var(--mute); font-size: 12px; padding-top: 2px; }
+.confirm__body dd, .job__summary dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
 .confirm__dest + .confirm__dest { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
 .confirm__dest-name { margin: 0 0 6px; font-weight: 700; }
 .confirm__dest-name .mono { font: 400 11px var(--f-mono); color: var(--mute); margin-left: 6px; }
@@ -376,6 +402,7 @@ textarea { resize: vertical; min-height: 96px; }
   .dest__actions { flex-direction: column-reverse; align-items: stretch; }
   .dest__actions .btn { width: 100%; }
   .dest__result:empty { display: none; }
+  .job__foot { flex-direction: column; align-items: stretch; }
   .gate__row { flex-wrap: wrap; }
   .gate__input { flex-basis: 100%; }
   .gate__row .btn { flex: 1; }
