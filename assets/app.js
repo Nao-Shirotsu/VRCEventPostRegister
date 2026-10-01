@@ -303,6 +303,9 @@ async function github(path, init = {}) {
   let res;
   try {
     res = await fetch(`${GITHUB_API}${path}`, {
+      // GitHub API の応答は max-age=60 で、既定ではブラウザが60秒使い回し、実行状況の変化が遅れて見える。
+      // 毎回確認しに行く（変化がなければ 304 が返り、API の回数制限には数えられない）
+      cache: "no-cache",
       ...init,
       headers: {
         Accept: "application/vnd.github+json",
@@ -350,7 +353,7 @@ async function dispatchWorkflow({ repo, workflow, ref, inputs, runningLabel, don
   const deadline = Date.now() + RUN_TIMEOUT_MS;
   let run = null;
   while (Date.now() < deadline) {
-    await sleep(run ? 4000 : 3000);
+    await sleep(run ? 2000 : 1500);
     if (!run) {
       const { workflow_runs: runs } = await github(`${base}/runs?event=workflow_dispatch&created=${encodeURIComponent(`>=${since}`)}&per_page=30`);
       run = runs.find((r) => r.display_title?.includes(requestId)) ?? null;
