@@ -37,3 +37,5 @@ jobs:
           VRC_USERNAME: ${{ secrets.VRC_USERNAME }}
           VRC_PASSWORD: ${{ secrets.VRC_PASSWORD }}
           VRC_TOTP_SECRET: ${{ secrets.VRC_TOTP_SECRET }}
+          VRC_APPROVE_URL: ${{ secrets.VRC_APPROVE_URL }}
+          VRC_APPROVE_SECRET: ${{ secrets.VRC_APPROVE_SECRET }}

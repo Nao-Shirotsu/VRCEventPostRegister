@@ -6,11 +6,15 @@
 //
 // VRChat のログイン Cookie は発行元の IP に結びつき、実行ごとに IP が変わる Actions では使い回せない。
 // そのため毎回ログインし、終わったらログアウトしてセッションを残さない。
+// IP が毎回違うので「新しい場所からのログイン」として止められることがある。そのときは GAS（gas/approve-login.gs）に
+// 承認メールのリンクを開いてもらい、ログインをやり直す。
 //
 // 環境変数（リポジトリのシークレット）
 //   VRC_USERNAME     サブアカウントのユーザー名
 //   VRC_PASSWORD     サブアカウントのパスワード
 //   VRC_TOTP_SECRET  2段階認証（認証アプリ）の秘密鍵。セットアップ時の「キーを手入力」の文字列
+//   VRC_APPROVE_URL     自動承認の GAS ウェブアプリの URL（任意。無ければ自動承認しない）
+//   VRC_APPROVE_SECRET  GAS のスクリプト プロパティ APPROVE_SECRET と同じ値
 //   GITHUB_EVENT_PATH  Actions が自動で設定する
 
 import { createHmac } from "node:crypto";
@@ -28,6 +32,7 @@ function fail(message) {
 /* ---------- 入力の確認（ログイン前に済ませる） ---------- */
 
 const { VRC_USERNAME: username, VRC_PASSWORD: password, VRC_TOTP_SECRET: totpSecret } = process.env;
+const { VRC_APPROVE_URL: approveUrl, VRC_APPROVE_SECRET: approveSecret } = process.env;
 for (const [name, value] of Object.entries({ VRC_USERNAME: username, VRC_PASSWORD: password, VRC_TOTP_SECRET: totpSecret })) {
   if (!value?.trim()) fail(`シークレット ${name} が設定されていません。`);
 }
@@ -60,7 +65,7 @@ if (p.kind === "event") {
     category: p.category,
     accessType: p.accessType,
     sendCreationNotification: Boolean(p.notify),
-    // 省略すると 500 (Application error) になる疑いがあるため、空でも明示して送る
+    // これらを省略すると 500 (Application error) になるため、空でも明示して送る
     languages: [],
     platforms: [],
     tags: [],
@@ -122,9 +127,42 @@ function totp(secret) {
   return String((h.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, "0");
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const APPROVE_WAIT_MS = 120_000;
+
+// GAS に承認メールのリンクを開いてもらう。メールが届くまで待つ
+async function approveNewPlace(since, message) {
+  if (!approveUrl?.trim() || !approveSecret?.trim()) {
+    fail(`VRChat にログインできませんでした: ${message}（メールのリンクを開いてから再送してください）`);
+  }
+  console.log("新しい場所からのログインとして止められたため、承認メールを待ちます…");
+  const deadline = Date.now() + APPROVE_WAIT_MS;
+  while (Date.now() < deadline) {
+    await sleep(10_000);
+    let body = null;
+    try {
+      const res = await fetch(approveUrl.trim(), { method: "POST", body: JSON.stringify({ secret: approveSecret.trim(), since }) });
+      body = await res.json();
+    } catch {
+      // GAS が一時的に応答しなくても、時間内はやり直す
+    }
+    if (body?.ok) return console.log("承認しました。ログインをやり直します。");
+    if (body && !body.pending) fail(`新しい場所からのログインを自動承認できませんでした: ${body.error ?? "理由不明"}`);
+  }
+  fail("新しい場所からのログインを自動承認できませんでした（承認メールが見つかりませんでした）。メールのリンクを開いてから再送してください。");
+}
+
 async function login() {
   const basic = Buffer.from(`${encodeURIComponent(username.trim())}:${encodeURIComponent(password)}`).toString("base64");
-  const first = await call("/auth/user", { headers: { Authorization: `Basic ${basic}` } });
+  const auth = () => call("/auth/user", { headers: { Authorization: `Basic ${basic}` } });
+  let first = await auth();
+  if (first.res.status === 401 && /somewhere new/i.test(first.message)) {
+    // メールの受信時刻と時計のずれを見込んで、少し前から探してもらう
+    await approveNewPlace(Date.now() - 30_000, first.message);
+    // ログイン回数制限を避けるため、やり直しは1回だけ
+    cookies.clear();
+    first = await auth();
+  }
   if (first.res.status === 401) fail(`VRChat にログインできませんでした: ${first.message}（ユーザー名・パスワードを確認してください）`);
   if (first.res.status === 429) fail("VRChat のログイン回数制限にかかりました。しばらく待ってから再度送信してください。");
   if (!first.res.ok) fail(`VRChat にログインできませんでした: ${first.message}`);

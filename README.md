@@ -9,6 +9,7 @@ assets/app.js                       画面の動作（ゲート・確認ダイ�
 tools/buffer-post.mjs               Buffer に X の予約投稿を登録する（Actions から実行）
 .github/workflows/buffer-post.yml   サイトから起動されるワークフロー（X / Buffer）
 gas/upload.gs                       画像アップロード受付（Google Apps Script に貼って使う）
+gas/approve-login.gs                VRChat の新しい場所からのログインを自動承認する（Google Apps Script に貼って使う）
 tools/vrchat.mjs                    VRChat グループにイベント・投稿を登録する（Actions から実行）
 .github/workflows/vrchat.yml        サイトから起動されるワークフロー（VRChat）
 ```
@@ -83,13 +84,43 @@ VRChat API もブラウザから直接呼べないため、X と同じく Action
 
 3. 対象グループは `assets/config.js` の `VRC_GROUP_ID` で指定する
 
+### 新しい場所からのログインの自動承認（GAS → Gmail）
+
+Actions は実行ごとに IP が変わるため、VRChat が「新しい場所からのログイン」としてログインを止め、承認メールを送ってくる。
+`tools/vrchat.mjs` はこのとき GAS（`gas/approve-login.gs`）を呼び、GAS が Gmail に届いた承認メールのリンクを開いて承認する。
+その後ログインを1回だけやり直す。メールを最長2分待ち、見つからなければ失敗として止まる。
+
+```
+Actions ──ログイン──▶ VRChat（401: 新しい場所）──承認メール──▶ Gmail
+   │                                                          ▲
+   └──▶ GAS（approve-login.gs）── リンクを開く ◀── メールを探す ┘
+```
+
+1. サブアカウントの VRChat のメールが届く Google アカウントで、https://script.google.com に新しいプロジェクトを作り、
+   `gas/approve-login.gs` の中身を貼る（`upload.gs` とは別のプロジェクトにする）
+2. 「プロジェクトの設定」→「スクリプト プロパティ」に `APPROVE_SECRET`（長いランダムな文字列）を追加する
+3. エディタで `testApprove` を実行し（初回は Gmail の権限を許可する）、ログに承認メールのリンクが出ることを確認する。
+   出ないときはメールの送信元とリンクに合わせて `SENDER` / `LINK_RE` を直す
+4. 「デプロイ」→「新しいデプロイ」→ 種類「ウェブアプリ」、実行ユーザー「自分」、アクセスできるユーザー「全員」
+5. Repository secrets に次の2つを登録する
+
+   | 名前 | 値 |
+   | --- | --- |
+   | `VRC_APPROVE_URL` | 手順4のウェブアプリの URL |
+   | `VRC_APPROVE_SECRET` | 手順2の `APPROVE_SECRET` と同じ値 |
+
+シークレットが無ければ自動承認はせず、今までどおりメールのリンクを開くよう表示して止まる。
+
+自動承認にすると、新しい場所からのログインを確認する仕組みは実質働かなくなる。ただしログインには引き続きパスワードと
+2段階認証が必要で、GAS が承認するのは Actions が依頼した時刻より後に届いた未読のメールだけ。
+
 ## 送信結果の表示
 
 | 表示 | 条件 |
 | --- | --- |
 | 送信成功 | 送信先が 2xx を返した / ワークフローが成功した |
 | 送信失敗 | 通信エラー・2xx 以外・JSON で `{ "ok": false, "error": "..." }` が返った / ワークフローが失敗した |
-| 送信済み・結果不明 | `mode: "no-cors"` の送信先（Google フォームなど）/ ワークフローが3分以内に終わらなかった |
+| 送信済み・結果不明 | `mode: "no-cors"` の送信先（Google フォームなど）/ ワークフローが5分以内に終わらなかった |
 
 どの結果でも、`checkUrl` に設定した掲載ページへのリンクを出す。
 

@@ -295,7 +295,8 @@ async function postGoogleForm({ id, entries, pages = 1 }, data) {
 /* ---------- GitHub Actions ---------- */
 
 const GITHUB_API = "https://api.github.com";
-const RUN_TIMEOUT_MS = 3 * 60 * 1000;
+// VRChat の新しい場所の承認待ち（最長2分）を含めても収まる長さ
+const RUN_TIMEOUT_MS = 5 * 60 * 1000;
 
 async function github(path, init = {}) {
   if (!token) throw new SendError("ロックされています。GitHub トークンを入力してください。");
